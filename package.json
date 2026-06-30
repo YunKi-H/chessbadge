@@ -1,0 +1,22 @@
+{
+  "name": "chessbadge",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "dev": "pnpm --filter @chessbadge/core build && pnpm --parallel --filter @chessbadge/server --filter @chessbadge/web dev",
+    "dev:server": "pnpm --filter @chessbadge/server dev",
+    "dev:web": "pnpm --filter @chessbadge/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @chessbadge/core build && pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.11.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.11.1",
+    "typescript": "^5.8.3"
+  }
+}

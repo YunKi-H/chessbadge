@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @db.Uuid
+  chzzkLinks    ChzzkLink[]
+  chessAccounts ChessAccount[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Streamer {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @db.Uuid
+  chzzkChannelId String       @unique
+  displayName    String?
+  overlays       Overlay[]
+  chzzkToken      ChzzkToken?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model ChzzkLink {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  chzzkChannelId String   @unique
+  displayName    String?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ChzzkToken {
+  streamerId            String   @id @db.Uuid
+  encryptedAccessToken  String
+  encryptedRefreshToken String
+  expiresAt             DateTime
+  scopes                String[]
+  streamer              Streamer @relation(fields: [streamerId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Overlay {
+  id          String   @id @default(uuid()) @db.Uuid
+  streamerId  String   @db.Uuid
+  publicToken String   @unique
+  theme       Json     @default("{}")
+  isActive    Boolean  @default(true)
+  streamer    Streamer @relation(fields: [streamerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ChessAccount {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @db.Uuid
+  provider           String
+  username           String
+  providerUserId     String?
+  verifiedAt         DateTime?
+  verificationMethod String?
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ratings            Rating[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([provider, username])
+}
+
+model Rating {
+  id             String       @id @default(uuid()) @db.Uuid
+  chessAccountId String       @db.Uuid
+  provider       String
+  speed          String
+  value          Int?
+  provisional    Boolean      @default(false)
+  fetchedAt      DateTime
+  raw            Json?
+  chessAccount   ChessAccount @relation(fields: [chessAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([chessAccountId, speed])
+}
+
