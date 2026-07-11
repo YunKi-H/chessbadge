@@ -1,8 +1,10 @@
+import "./config/env.js";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { registerChzzkAuthRoutes } from "./auth/chzzk/routes.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerOverlayRoutes } from "./routes/overlay.js";
 
@@ -40,5 +42,6 @@ if (process.env.NODE_ENV === "production") {
 
 await registerHealthRoutes(app);
 await registerOverlayRoutes(app);
+await registerChzzkAuthRoutes(app);
 
 await app.listen({ port, host: "0.0.0.0" });
