@@ -1,6 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import type { ChatOverlayEvent } from "@chessbadge/core";
-import { subscribeChatOverlayEvents } from "../realtime/overlay-events.js";
+import { z } from "zod";
+import { subscribeStreamerChatOverlayEvents } from "../realtime/overlay-events.js";
+
+const testEventsQuerySchema = z.object({
+  streamerUid: z.string().min(1).optional()
+});
 
 const sampleEvent: ChatOverlayEvent = {
   id: "sample-1",
@@ -20,7 +25,9 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
     messages: [sampleEvent]
   }));
 
-  app.get("/events/test", async (_request, reply) => {
+  app.get("/events/test", async (request, reply) => {
+    const query = testEventsQuerySchema.parse(request.query);
+
     reply.raw.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
@@ -34,14 +41,16 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
 
     send(sampleEvent);
 
-    const unsubscribe = subscribeChatOverlayEvents(send);
+    const unsubscribe = query.streamerUid
+      ? subscribeStreamerChatOverlayEvents(query.streamerUid, send)
+      : () => {};
 
     const heartbeat = setInterval(() => {
       reply.raw.write(`event: heartbeat\n`);
       reply.raw.write(`data: ${JSON.stringify({ at: new Date().toISOString() })}\n\n`);
     }, 15000);
 
-    _request.raw.on("close", () => {
+    request.raw.on("close", () => {
       unsubscribe();
       clearInterval(heartbeat);
     });

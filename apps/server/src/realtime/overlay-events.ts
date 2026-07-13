@@ -1,20 +1,29 @@
 import { EventEmitter } from "node:events";
 import type { ChatOverlayEvent } from "@chessbadge/core";
 
-const chatEventName = "chat";
 const overlayEvents = new EventEmitter();
 
 overlayEvents.setMaxListeners(100);
 
-export function publishChatOverlayEvent(event: ChatOverlayEvent) {
-  overlayEvents.emit(chatEventName, event);
+export function publishChatOverlayEvent(
+  streamerUid: string,
+  event: ChatOverlayEvent
+) {
+  overlayEvents.emit(streamerChatEventName(streamerUid), event);
 }
 
-export function subscribeChatOverlayEvents(listener: (event: ChatOverlayEvent) => void) {
-  overlayEvents.on(chatEventName, listener);
+export function subscribeStreamerChatOverlayEvents(
+  streamerUid: string,
+  listener: (event: ChatOverlayEvent) => void
+) {
+  const eventName = streamerChatEventName(streamerUid);
+  overlayEvents.on(eventName, listener);
 
   return () => {
-    overlayEvents.off(chatEventName, listener);
+    overlayEvents.off(eventName, listener);
   };
 }
 
+function streamerChatEventName(streamerUid: string) {
+  return `chat:${streamerUid}`;
+}

@@ -6,7 +6,7 @@
     "dev": "pnpm --filter @chessbadge/core build && tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "tsx --test src/auth/*.test.ts src/auth/chzzk/*.test.ts src/chzzk/*.test.ts src/firebase/*.test.ts src/security/*.test.ts",
+    "test": "tsx --test src/auth/*.test.ts src/auth/chzzk/*.test.ts src/chzzk/*.test.ts src/firebase/*.test.ts src/realtime/*.test.ts src/security/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint ."
   },

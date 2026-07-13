@@ -1,19 +1,28 @@
 import { useEffect, useState } from "react";
 import type { ChatOverlayEvent } from "@chessbadge/core";
+import { onAuthStateChanged } from "firebase/auth";
+import { getFirebaseClientAuth } from "../firebase/client";
 
 export function OverlayPreview() {
   const [messages, setMessages] = useState<ChatOverlayEvent[]>([]);
 
   useEffect(() => {
-    const events = new EventSource("/events/test");
+    let events: EventSource | null = null;
 
-    events.addEventListener("chat", (event) => {
-      const message = JSON.parse(event.data) as ChatOverlayEvent;
-      setMessages((current) => [message, ...current].slice(0, 5));
+    const unsubscribeAuth = onAuthStateChanged(getFirebaseClientAuth(), (user) => {
+      events?.close();
+      const query = user ? `?streamerUid=${encodeURIComponent(user.uid)}` : "";
+      events = new EventSource(`/events/test${query}`);
+
+      events.addEventListener("chat", (event) => {
+        const message = JSON.parse(event.data) as ChatOverlayEvent;
+        setMessages((current) => [message, ...current].slice(0, 5));
+      });
     });
 
     return () => {
-      events.close();
+      unsubscribeAuth();
+      events?.close();
     };
   }, []);
 
@@ -38,4 +47,3 @@ export function OverlayPreview() {
     </section>
   );
 }
-

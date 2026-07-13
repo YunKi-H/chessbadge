@@ -57,6 +57,13 @@ The refresh scheduler and duplicate-refresh guard currently live in process
 memory. Run one server task for the MVP; distributed coordination is required
 before multiple ECS tasks can refresh the same one-time token safely.
 
+Chzzk chat connections are managed independently in a map keyed by the
+streamer's Firebase UID. Logging in or stopping one streamer does not replace
+another streamer's socket, token refresh timer, status, or event subscription.
+The test SSE route scopes live chat events to the UID supplied by the signed-in
+browser. This test route is not an authorization boundary; production overlays
+will use a separate unguessable public token.
+
 The Custom Token is never placed in the callback URL. The one-time login code is
 kept in server memory for two minutes and can be consumed only once. This is valid
 for the single-task MVP. Move the exchange store to Redis before running multiple

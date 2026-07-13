@@ -47,12 +47,23 @@ export interface ChzzkSessionStatus {
   lastError: string | null;
 }
 
-class ChzzkSessionManager {
-  private ownerUid: string | null = null;
+interface ManagedChzzkSession {
+  start(
+    config: ChzzkAuthConfig,
+    accessToken: string,
+    logger: FastifyBaseLogger
+  ): Promise<ChzzkSessionStatus>;
+  stop(): void;
+  getStatus(): ChzzkSessionStatus;
+  updateAccessToken(accessToken: string): void;
+}
+
+class ChzzkSession implements ManagedChzzkSession {
   private socket: ChzzkSocket | null = null;
   private accessToken: string | null = null;
   private config: ChzzkAuthConfig | null = null;
   private logger: FastifyBaseLogger | null = null;
+  private active = false;
   private status: ChzzkSessionStatus = {
     connected: false,
     sessionKey: null,
@@ -62,15 +73,16 @@ class ChzzkSessionManager {
     lastError: null
   };
 
+  constructor(private readonly ownerUid: string) {}
+
   async start(
-    ownerUid: string,
     config: ChzzkAuthConfig,
     accessToken: string,
     logger: FastifyBaseLogger
-  ) {
+  ): Promise<ChzzkSessionStatus> {
     this.stop();
 
-    this.ownerUid = ownerUid;
+    this.active = true;
     this.config = config;
     this.accessToken = accessToken;
     this.logger = logger;
@@ -85,7 +97,14 @@ class ChzzkSessionManager {
 
     const session = await createChzzkUserSession(config, accessToken);
 
-    logger.info({ sessionUrl: redactSessionUrl(session.url) }, "Chzzk session URL created");
+    if (!this.active) {
+      throw new Error(`Chzzk session start was cancelled for ${this.ownerUid}`);
+    }
+
+    logger.info(
+      { ownerUid: this.ownerUid, sessionUrl: redactSessionUrl(session.url) },
+      "Chzzk session URL created"
+    );
 
     this.socket = socketIoClient(session.url, {
       transports: ["websocket"],
@@ -98,12 +117,15 @@ class ChzzkSessionManager {
 
     this.socket.on("connect", () => {
       this.status.connected = true;
-      logger.info("Chzzk socket connected");
+      logger.info({ ownerUid: this.ownerUid }, "Chzzk socket connected");
     });
 
     this.socket.on("disconnect", (reason: unknown) => {
       this.status.connected = false;
-      logger.warn({ reason: String(reason) }, "Chzzk socket disconnected");
+      logger.warn(
+        { ownerUid: this.ownerUid, reason: String(reason) },
+        "Chzzk socket disconnected"
+      );
     });
 
     this.socket.on("connect_error", (error: unknown) => {
@@ -131,11 +153,8 @@ class ChzzkSessionManager {
     return this.getStatus();
   }
 
-  stop(requesterUid?: string) {
-    if (requesterUid && requesterUid !== this.ownerUid) {
-      return false;
-    }
-
+  stop(): void {
+    this.active = false;
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -144,28 +163,17 @@ class ChzzkSessionManager {
     this.status.connected = false;
     this.status.subscribed = false;
     this.status.sessionKey = null;
-    this.ownerUid = null;
     this.accessToken = null;
     this.config = null;
     this.logger = null;
-    return true;
   }
 
-  getStatus(requesterUid?: string) {
-    if (requesterUid && requesterUid !== this.ownerUid) {
-      return null;
-    }
-
+  getStatus(): ChzzkSessionStatus {
     return { ...this.status };
   }
 
-  updateAccessToken(ownerUid: string, accessToken: string): boolean {
-    if (ownerUid !== this.ownerUid) {
-      return false;
-    }
-
+  updateAccessToken(accessToken: string): void {
     this.accessToken = accessToken;
-    return true;
   }
 
   private async handleSystemMessage(message: unknown) {
@@ -236,7 +244,80 @@ class ChzzkSessionManager {
       "Chzzk chat message received"
     );
 
-    publishChatOverlayEvent(toChatOverlayEvent(parsed.data));
+    publishChatOverlayEvent(this.ownerUid, toChatOverlayEvent(parsed.data));
+  }
+}
+
+type ChzzkSessionFactory = (ownerUid: string) => ManagedChzzkSession;
+
+export class ChzzkSessionManager {
+  private readonly sessions = new Map<string, ManagedChzzkSession>();
+
+  constructor(
+    private readonly createSession: ChzzkSessionFactory = (ownerUid) =>
+      new ChzzkSession(ownerUid)
+  ) {}
+
+  async start(
+    ownerUid: string,
+    config: ChzzkAuthConfig,
+    accessToken: string,
+    logger: FastifyBaseLogger
+  ): Promise<ChzzkSessionStatus> {
+    this.stop(ownerUid);
+
+    const session = this.createSession(ownerUid);
+    this.sessions.set(ownerUid, session);
+
+    try {
+      return await session.start(config, accessToken, logger);
+    } catch (error) {
+      if (this.sessions.get(ownerUid) === session) {
+        this.sessions.delete(ownerUid);
+        session.stop();
+      }
+
+      throw error;
+    }
+  }
+
+  stop(ownerUid: string): boolean {
+    const session = this.sessions.get(ownerUid);
+
+    if (!session) {
+      return false;
+    }
+
+    this.sessions.delete(ownerUid);
+    session.stop();
+    return true;
+  }
+
+  stopAll(): void {
+    for (const session of this.sessions.values()) {
+      session.stop();
+    }
+
+    this.sessions.clear();
+  }
+
+  getStatus(ownerUid: string): ChzzkSessionStatus | null {
+    return this.sessions.get(ownerUid)?.getStatus() ?? null;
+  }
+
+  updateAccessToken(ownerUid: string, accessToken: string): boolean {
+    const session = this.sessions.get(ownerUid);
+
+    if (!session) {
+      return false;
+    }
+
+    session.updateAccessToken(accessToken);
+    return true;
+  }
+
+  getActiveSessionCount(): number {
+    return this.sessions.size;
   }
 }
 
