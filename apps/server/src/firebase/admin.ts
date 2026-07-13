@@ -25,6 +25,7 @@ export function getFirebaseAdminApp(): App {
   const projectId = requiredEnv("FIREBASE_PROJECT_ID");
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
   app = initializeApp({
     credential:
@@ -34,7 +35,9 @@ export function getFirebaseAdminApp(): App {
             clientEmail,
             privateKey: privateKey.replace(/\\n/g, "\n")
           })
-        : applicationDefault(),
+        : serviceAccountPath
+          ? cert(serviceAccountPath)
+          : applicationDefault(),
     projectId
   });
 
