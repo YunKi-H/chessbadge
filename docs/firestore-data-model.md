@@ -66,6 +66,7 @@ viewer.
   tokenStatus: "active" | "reauth_required";
   tokenErrorAt: Timestamp | null;
   sessionUpdatedAt: Timestamp;
+  overlayToken: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -116,7 +117,13 @@ token fields. The current in-process refresh lock assumes one ECS server task.
 ```
 
 The random document ID is the OBS browser-source token. It must be long enough
-to resist guessing and must be replaceable from the streamer dashboard.
+to resist guessing and must be replaceable from the streamer dashboard. Rotated
+tokens remain as inactive documents so existing browser sources stop resolving.
+The active token is also stored on `streamers/{firebaseUid}.overlayToken` for a
+direct authenticated dashboard lookup.
+
+Public overlay and SSE paths contain this bearer token. Application and
+infrastructure access logs must redact the token path segment.
 
 ### `chessAccounts/{accountId}`
 

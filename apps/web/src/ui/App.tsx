@@ -1,6 +1,7 @@
 import { Radio, UserRound } from "lucide-react";
 import { OverlayPreview } from "./OverlayPreview";
 import { ChzzkAuthCallback } from "./ChzzkAuthCallback";
+import { OverlaySettings } from "./OverlaySettings";
 
 export function App() {
   if (window.location.pathname === "/auth/chzzk/callback") {
@@ -32,6 +33,7 @@ export function App() {
             시청자로 연결
           </a>
         </section>
+        {window.location.pathname === "/streamer" ? <OverlaySettings /> : null}
         <OverlayPreview />
       </div>
     </main>

@@ -8,6 +8,7 @@ import {
   getChzzkAuthConfig
 } from "./client.js";
 import { chzzkSessionService } from "../../chzzk/session-service.js";
+import { getWebAppUrl } from "../../config/web.js";
 import { getFirebaseAuth } from "../../firebase/admin.js";
 import { saveChzzkStreamerTokens } from "../../firebase/chzzk-tokens.js";
 import { issueFirebaseLoginCode } from "../../firebase/login-exchange.js";
@@ -148,18 +149,4 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
       };
     }
   );
-}
-
-function getWebAppUrl() {
-  const configuredUrl = process.env.WEB_APP_URL;
-
-  if (configuredUrl) {
-    return configuredUrl;
-  }
-
-  if (process.env.NODE_ENV !== "production") {
-    return "http://localhost:5173";
-  }
-
-  throw new Error("Missing WEB_APP_URL");
 }

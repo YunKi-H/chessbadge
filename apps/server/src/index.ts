@@ -16,7 +16,10 @@ const port = Number(process.env.PORT ?? 3000);
 
 const app = Fastify({
   logger: {
-    level: process.env.NODE_ENV === "production" ? "info" : "debug"
+    level: process.env.NODE_ENV === "production" ? "info" : "debug",
+    serializers: {
+      req: sanitizeLoggedRequest
+    }
   }
 });
 
@@ -64,4 +67,14 @@ async function restoreChzzkSessions() {
   } catch (error) {
     app.log.error({ err: error }, "Chzzk session startup recovery did not run");
   }
+}
+
+function sanitizeLoggedRequest(request: { method?: string; url?: string }) {
+  return {
+    method: request.method,
+    url: request.url?.replace(
+      /(\/events\/overlay\/|\/overlay\/)[A-Za-z0-9_-]{43}/g,
+      "$1[REDACTED]"
+    )
+  };
 }

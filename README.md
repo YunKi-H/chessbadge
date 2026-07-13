@@ -70,6 +70,12 @@ in the background with a concurrency limit of five. Failed restores retry with
 exponential backoff; UID-scoped serialization prevents a concurrent manual stop
 from being overwritten by recovery.
 
+Authenticated streamers can create, rotate, enable, and disable a 256-bit public
+overlay token. `/overlay/{token}` is the OBS browser-source page and
+`/events/overlay/{token}` streams only that token's streamer events. Rotation or
+disablement revokes current in-process SSE connections immediately; periodic
+Firestore revalidation also closes connections changed by external processes.
+
 The Custom Token is never placed in the callback URL. The one-time login code is
 kept in server memory for two minutes and can be consumed only once. This is valid
 for the single-task MVP. Move the exchange store to Redis before running multiple
