@@ -45,6 +45,12 @@ does not create a streamer record or start a Chzzk chat session. A user can be
 both a viewer and a streamer; logging in as a viewer does not remove an existing
 streamer record.
 
+Viewer OAuth credentials are used only to call Chzzk's current-user API during
+the callback and are not persisted. Streamer access and refresh tokens are
+encrypted with AES-256-GCM before being stored in Firestore. The active streamer
+access token also lives in the in-memory chat session and is cleared when that
+session stops. Refresh-token rotation is separate upcoming work.
+
 The Custom Token is never placed in the callback URL. The one-time login code is
 kept in server memory for two minutes and can be consumed only once. This is valid
 for the single-task MVP. Move the exchange store to Redis before running multiple

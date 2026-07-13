@@ -145,6 +145,9 @@ class ChzzkSessionManager {
     this.status.subscribed = false;
     this.status.sessionKey = null;
     this.ownerUid = null;
+    this.accessToken = null;
+    this.config = null;
+    this.logger = null;
     return true;
   }
 

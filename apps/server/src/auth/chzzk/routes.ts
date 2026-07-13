@@ -9,6 +9,7 @@ import {
 } from "./client.js";
 import { chzzkSessionManager } from "../../chzzk/session.js";
 import { getFirebaseAuth } from "../../firebase/admin.js";
+import { saveChzzkStreamerTokens } from "../../firebase/chzzk-tokens.js";
 import { issueFirebaseLoginCode } from "../../firebase/login-exchange.js";
 import {
   registerChzzkStreamer,
@@ -71,6 +72,7 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
 
     if (pendingLogin.mode === "streamer") {
       await registerChzzkStreamer(firebaseUid, chzzkUser);
+      await saveChzzkStreamerTokens(firebaseUid, token);
     }
 
     const customToken = await getFirebaseAuth().createCustomToken(firebaseUid, {
@@ -85,6 +87,8 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
         request.log.error({ err: error }, "Chzzk chat session did not start after login");
       }
     }
+
+    // Viewer credentials are used only for identity lookup and are never persisted.
 
     const loginCode = issueFirebaseLoginCode({
       customToken,

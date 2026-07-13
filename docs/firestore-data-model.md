@@ -71,12 +71,18 @@ viewer.
 
 Server-only OAuth credentials for a streamer.
 
+Viewer OAuth credentials are never stored in this collection. Streamer tokens
+are encrypted with AES-256-GCM and authenticated against their Firebase UID and
+token kind before being written. `scope` preserves the provider response as-is.
+
 ```ts
 {
   encryptedAccessToken: string;
   encryptedRefreshToken: string;
+  tokenType: string;
   expiresAt: Timestamp;
-  scopes: string[];
+  scope: string | null;
+  encryptionVersion: 1;
   updatedAt: Timestamp;
 }
 ```
