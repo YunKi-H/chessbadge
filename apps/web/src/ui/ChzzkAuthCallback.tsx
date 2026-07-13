@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { signInWithCustomToken } from "firebase/auth";
 import { getFirebaseClientAuth } from "../firebase/client";
 import { getCurrentApiUser } from "../api/client";
+import type { ChzzkLoginMode } from "@chessbadge/core";
 
 type LoginState =
   | { status: "loading" }
-  | { status: "success"; displayName: string }
+  | { status: "success"; displayName: string; mode: ChzzkLoginMode }
   | { status: "error"; message: string };
 
 interface LoginExchangeResponse {
   ok: true;
   customToken: string;
+  mode: ChzzkLoginMode;
   user: {
     displayName: string;
   };
@@ -31,8 +33,12 @@ export function ChzzkAuthCallback() {
 
     void completeLogin(code)
       .then((result) => {
-        window.history.replaceState({}, "", "/streamer");
-        setState({ status: "success", displayName: result.user.displayName });
+        window.history.replaceState({}, "", `/${result.mode}`);
+        setState({
+          status: "success",
+          displayName: result.user.displayName,
+          mode: result.mode
+        });
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "로그인에 실패했습니다.";
@@ -49,7 +55,9 @@ export function ChzzkAuthCallback() {
         {state.status === "success" ? (
           <>
             <h1 className="text-xl font-semibold text-white">계정 연결 완료</h1>
-            <p className="mt-2 text-slate-300">{state.displayName} 계정으로 로그인했습니다.</p>
+            <p className="mt-2 text-slate-300">
+              {state.displayName} 계정을 {loginModeLabel(state.mode)} 모드로 연결했습니다.
+            </p>
           </>
         ) : null}
         {state.status === "error" ? (
@@ -107,7 +115,12 @@ function isLoginExchangeResponse(value: unknown): value is LoginExchangeResponse
   return (
     response.ok === true &&
     typeof response.customToken === "string" &&
+    (response.mode === "streamer" || response.mode === "viewer") &&
     Boolean(response.user) &&
     typeof response.user?.displayName === "string"
   );
+}
+
+function loginModeLabel(mode: ChzzkLoginMode) {
+  return mode === "streamer" ? "스트리머" : "시청자";
 }

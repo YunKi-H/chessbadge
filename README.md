@@ -29,15 +29,21 @@ Firestore through the Admin SDK.
 ## Chzzk Login Flow
 
 ```text
-GET /api/auth/chzzk/start
+GET /api/auth/chzzk/start?mode=streamer|viewer
   -> Chzzk OAuth
   -> GET /open/v1/users/me
-  -> Firestore user upsert
+  -> users and chzzkAccounts upsert
+  -> streamer mode only: streamers upsert and chat session start
   -> Firebase Custom Token creation
   -> web callback with a short-lived one-time code
   -> POST /api/auth/firebase/exchange
   -> Firebase browser sign-in
 ```
+
+Both modes create the same Firebase user and Chzzk account mapping. Viewer mode
+does not create a streamer record or start a Chzzk chat session. A user can be
+both a viewer and a streamer; logging in as a viewer does not remove an existing
+streamer record.
 
 The Custom Token is never placed in the callback URL. The one-time login code is
 kept in server memory for two minutes and can be consumed only once. This is valid

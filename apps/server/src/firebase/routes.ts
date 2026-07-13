@@ -31,6 +31,7 @@ export async function registerFirebaseRoutes(app: FastifyInstance) {
       .send({
         ok: true,
         customToken: exchange.customToken,
+        mode: exchange.mode,
         user: exchange.user
       });
   });

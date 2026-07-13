@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import type { ChzzkLoginMode } from "@chessbadge/core";
 import { z } from "zod";
 import {
   createChzzkAuthorizationUrl,
@@ -9,7 +10,10 @@ import {
 import { chzzkSessionManager } from "../../chzzk/session.js";
 import { getFirebaseAuth } from "../../firebase/admin.js";
 import { issueFirebaseLoginCode } from "../../firebase/login-exchange.js";
-import { upsertChzzkStreamer } from "../../firebase/users.js";
+import {
+  registerChzzkStreamer,
+  upsertChzzkUser
+} from "../../firebase/users.js";
 import { OneTimeStore } from "../one-time-store.js";
 import { getRequiredFirebaseUser, requireFirebaseUser } from "../firebase.js";
 
@@ -18,12 +22,25 @@ const callbackQuerySchema = z.object({
   state: z.string().min(1)
 });
 
-const pendingStates = new OneTimeStore<true>(10 * 60 * 1_000);
+const startQuerySchema = z.object({
+  mode: z.enum(["streamer", "viewer"])
+});
+
+const pendingStates = new OneTimeStore<{ mode: ChzzkLoginMode }>(10 * 60 * 1_000);
 
 export async function registerChzzkAuthRoutes(app: FastifyInstance) {
-  app.get("/api/auth/chzzk/start", async (_request, reply) => {
+  app.get("/api/auth/chzzk/start", async (request, reply) => {
+    const result = startQuerySchema.safeParse(request.query);
+
+    if (!result.success) {
+      return reply.code(400).send({
+        error: "A valid Chzzk login mode is required",
+        modes: ["streamer", "viewer"]
+      });
+    }
+
     const config = getChzzkAuthConfig();
-    const state = pendingStates.issue(true);
+    const state = pendingStates.issue({ mode: result.data.mode });
 
     return reply.redirect(createChzzkAuthorizationUrl(config, state).toString());
   });
@@ -39,7 +56,9 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
 
     const { code, state } = result.data;
 
-    if (!pendingStates.consume(state)) {
+    const pendingLogin = pendingStates.consume(state);
+
+    if (!pendingLogin) {
       return reply.code(400).send({
         error: "Invalid or expired Chzzk OAuth state"
       });
@@ -48,20 +67,28 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
     const config = getChzzkAuthConfig();
     const token = await exchangeChzzkAuthorizationCode(config, code, state);
     const chzzkUser = await getChzzkCurrentUser(config, token.accessToken);
-    const firebaseUid = await upsertChzzkStreamer(chzzkUser);
+    const firebaseUid = await upsertChzzkUser(chzzkUser);
+
+    if (pendingLogin.mode === "streamer") {
+      await registerChzzkStreamer(firebaseUid, chzzkUser);
+    }
+
     const customToken = await getFirebaseAuth().createCustomToken(firebaseUid, {
       provider: "chzzk",
       chzzkChannelId: chzzkUser.channelId
     });
 
-    try {
-      await chzzkSessionManager.start(firebaseUid, config, token.accessToken, request.log);
-    } catch (error) {
-      request.log.error({ err: error }, "Chzzk chat session did not start after login");
+    if (pendingLogin.mode === "streamer") {
+      try {
+        await chzzkSessionManager.start(firebaseUid, config, token.accessToken, request.log);
+      } catch (error) {
+        request.log.error({ err: error }, "Chzzk chat session did not start after login");
+      }
     }
 
     const loginCode = issueFirebaseLoginCode({
       customToken,
+      mode: pendingLogin.mode,
       user: {
         uid: firebaseUid,
         chzzkChannelId: chzzkUser.channelId,
@@ -73,7 +100,8 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
       {
         tokenType: token.tokenType,
         expiresIn: token.expiresIn,
-        scope: token.scope
+        scope: token.scope,
+        mode: pendingLogin.mode
       },
       "Chzzk OAuth token exchange succeeded"
     );

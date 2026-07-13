@@ -1,7 +1,9 @@
 import { OneTimeStore } from "../auth/one-time-store.js";
+import type { ChzzkLoginMode } from "@chessbadge/core";
 
 export interface FirebaseLoginExchange {
   customToken: string;
+  mode: ChzzkLoginMode;
   user: {
     uid: string;
     chzzkChannelId: string;

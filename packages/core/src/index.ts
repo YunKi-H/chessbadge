@@ -1,5 +1,7 @@
 export type ChessProvider = "lichess" | "chesscom";
 
+export type ChzzkLoginMode = "streamer" | "viewer";
+
 export type ChessSpeed = "bullet" | "blitz" | "rapid" | "classical";
 
 export interface RatingBadge {

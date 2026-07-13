@@ -53,6 +53,11 @@ claiming the same Chzzk identity when writes are performed in a transaction.
 
 ### `streamers/{firebaseUid}`
 
+Created only when the user completes Chzzk OAuth with `mode=streamer`. Viewer
+login updates the common user and Chzzk account documents without creating this
+document. Existing streamer documents remain when the same user logs in as a
+viewer.
+
 ```ts
 {
   chzzkChannelId: string;
