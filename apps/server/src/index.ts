@@ -5,7 +5,9 @@ import fastifyStatic from "@fastify/static";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerChzzkAuthRoutes } from "./auth/chzzk/routes.js";
+import { getChzzkAuthConfig } from "./auth/chzzk/client.js";
 import { registerFirebaseAuthentication } from "./auth/firebase.js";
+import { chzzkSessionService } from "./chzzk/session-service.js";
 import { registerFirebaseRoutes } from "./firebase/routes.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerOverlayRoutes } from "./routes/overlay.js";
@@ -50,3 +52,16 @@ await registerOverlayRoutes(app);
 await registerChzzkAuthRoutes(app);
 
 await app.listen({ port, host: "0.0.0.0" });
+
+void restoreChzzkSessions();
+
+async function restoreChzzkSessions() {
+  try {
+    await chzzkSessionService.restoreEnabledSessions(
+      getChzzkAuthConfig(),
+      app.log
+    );
+  } catch (error) {
+    app.log.error({ err: error }, "Chzzk session startup recovery did not run");
+  }
+}

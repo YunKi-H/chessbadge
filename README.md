@@ -64,6 +64,12 @@ The test SSE route scopes live chat events to the UID supplied by the signed-in
 browser. This test route is not an authorization boundary; production overlays
 will use a separate unguessable public token.
 
+Streamer login persists `chatSessionEnabled=true`, while a manual stop persists
+`false`. After Fastify starts accepting requests, it restores enabled sessions
+in the background with a concurrency limit of five. Failed restores retry with
+exponential backoff; UID-scoped serialization prevents a concurrent manual stop
+from being overwritten by recovery.
+
 The Custom Token is never placed in the callback URL. The one-time login code is
 kept in server memory for two minutes and can be consumed only once. This is valid
 for the single-task MVP. Move the exchange store to Redis before running multiple

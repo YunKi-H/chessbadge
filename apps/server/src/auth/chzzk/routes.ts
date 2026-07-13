@@ -7,8 +7,7 @@ import {
   getChzzkCurrentUser,
   getChzzkAuthConfig
 } from "./client.js";
-import { chzzkSessionManager } from "../../chzzk/session.js";
-import { chzzkTokenManager } from "../../chzzk/token-manager.js";
+import { chzzkSessionService } from "../../chzzk/session-service.js";
 import { getFirebaseAuth } from "../../firebase/admin.js";
 import { saveChzzkStreamerTokens } from "../../firebase/chzzk-tokens.js";
 import { issueFirebaseLoginCode } from "../../firebase/login-exchange.js";
@@ -83,15 +82,14 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
 
     if (pendingLogin.mode === "streamer") {
       try {
-        await chzzkSessionManager.start(firebaseUid, config, token.accessToken, request.log);
+        await chzzkSessionService.startAfterLogin(
+          firebaseUid,
+          config,
+          token.accessToken,
+          request.log
+        );
       } catch (error) {
         request.log.error({ err: error }, "Chzzk chat session did not start after login");
-      }
-
-      try {
-        await chzzkTokenManager.startAutoRefresh(firebaseUid, config, request.log);
-      } catch (error) {
-        request.log.error({ err: error }, "Chzzk token auto-refresh did not start");
       }
     }
 
@@ -131,7 +129,7 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
 
       return {
         ok: true,
-        session: chzzkSessionManager.getStatus(user.uid)
+        session: chzzkSessionService.getStatus(user.uid)
       };
     }
   );
@@ -141,13 +139,12 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
     { preHandler: requireFirebaseUser },
     async (request) => {
       const user = getRequiredFirebaseUser(request);
-      const stopped = chzzkSessionManager.stop(user.uid);
-      chzzkTokenManager.stopAutoRefresh(user.uid);
+      const stopped = await chzzkSessionService.stop(user.uid);
 
       return {
         ok: true,
         stopped,
-        session: chzzkSessionManager.getStatus(user.uid)
+        session: chzzkSessionService.getStatus(user.uid)
       };
     }
   );

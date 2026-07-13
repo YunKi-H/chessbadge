@@ -62,12 +62,19 @@ viewer.
 {
   chzzkChannelId: string;
   displayName: string;
+  chatSessionEnabled: boolean;
   tokenStatus: "active" | "reauth_required";
   tokenErrorAt: Timestamp | null;
+  sessionUpdatedAt: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
 ```
+
+`chatSessionEnabled` records the streamer's desired state, not the current
+WebSocket state. A manual stop sets it to `false`; server shutdown does not. On
+startup, the server restores documents where it is `true` and the token status
+is `active`.
 
 ### `chzzkTokens/{firebaseUid}`
 

@@ -6,6 +6,11 @@ export interface ChzzkUserIdentity {
   channelName: string;
 }
 
+export interface ChzzkStreamerSessionIntent {
+  enabled: boolean;
+  tokenStatus: "active" | "reauth_required" | null;
+}
+
 export async function upsertChzzkUser(identity: ChzzkUserIdentity): Promise<string> {
   const uid = toFirebaseUid(identity.channelId);
   const db = getFirestoreDb();
@@ -80,6 +85,47 @@ export async function registerChzzkStreamer(
       { merge: true }
     );
   });
+}
+
+export async function setChzzkChatSessionEnabled(
+  uid: string,
+  enabled: boolean
+): Promise<void> {
+  await getFirestoreDb().collection("streamers").doc(uid).set(
+    {
+      chatSessionEnabled: enabled,
+      sessionUpdatedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
+    },
+    { merge: true }
+  );
+}
+
+export async function getChzzkStreamerSessionIntent(
+  uid: string
+): Promise<ChzzkStreamerSessionIntent> {
+  const snapshot = await getFirestoreDb().collection("streamers").doc(uid).get();
+  const data = snapshot.data();
+  const tokenStatus = data?.tokenStatus;
+
+  return {
+    enabled: data?.chatSessionEnabled === true,
+    tokenStatus:
+      tokenStatus === "active" || tokenStatus === "reauth_required"
+        ? tokenStatus
+        : null
+  };
+}
+
+export async function listRestorableChzzkStreamerUids(): Promise<string[]> {
+  const snapshot = await getFirestoreDb()
+    .collection("streamers")
+    .where("chatSessionEnabled", "==", true)
+    .get();
+
+  return snapshot.docs
+    .filter((document) => document.data().tokenStatus === "active")
+    .map((document) => document.id);
 }
 
 function toFirebaseUid(channelId: string): string {
