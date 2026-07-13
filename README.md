@@ -47,6 +47,28 @@ ECS tasks.
 Use `GET /api/firebase/status` to verify both Firebase Authentication and Firestore
 server connectivity.
 
+## Authenticated API
+
+After Firebase browser sign-in, React sends the current Firebase ID Token to
+Fastify on every protected request:
+
+```http
+Authorization: Bearer <firebase-id-token>
+```
+
+Fastify verifies the token with the Firebase Admin SDK and exposes the verified
+`uid`, `provider`, and `chzzkChannelId` to route handlers. The current protected
+endpoints are:
+
+```text
+GET  /api/me
+GET  /api/chzzk/session/status
+POST /api/chzzk/session/stop
+```
+
+The Chzzk session manager also records the owning Firebase UID, so an authenticated
+user cannot inspect or stop another user's active session.
+
 ## First Milestone
 
 The first product risk to remove is Chzzk chat ingestion:

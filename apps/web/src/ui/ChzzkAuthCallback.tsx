@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { signInWithCustomToken } from "firebase/auth";
 import { getFirebaseClientAuth } from "../firebase/client";
+import { getCurrentApiUser } from "../api/client";
 
 type LoginState =
   | { status: "loading" }
@@ -71,6 +72,7 @@ function completeLogin(code: string): Promise<LoginExchangeResponse> {
 
   const login = exchangeLoginCode(code).then(async (result) => {
     await signInWithCustomToken(getFirebaseClientAuth(), result.customToken);
+    await getCurrentApiUser();
     return result;
   });
 

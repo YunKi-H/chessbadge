@@ -11,6 +11,7 @@ import { getFirebaseAuth } from "../../firebase/admin.js";
 import { issueFirebaseLoginCode } from "../../firebase/login-exchange.js";
 import { upsertChzzkStreamer } from "../../firebase/users.js";
 import { OneTimeStore } from "../one-time-store.js";
+import { getRequiredFirebaseUser, requireFirebaseUser } from "../firebase.js";
 
 const callbackQuerySchema = z.object({
   code: z.string().min(1),
@@ -54,7 +55,7 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
     });
 
     try {
-      await chzzkSessionManager.start(config, token.accessToken, request.log);
+      await chzzkSessionManager.start(firebaseUid, config, token.accessToken, request.log);
     } catch (error) {
       request.log.error({ err: error }, "Chzzk chat session did not start after login");
     }
@@ -83,19 +84,33 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
     return reply.redirect(callbackUrl.toString());
   });
 
-  app.get("/api/chzzk/session/status", async () => ({
-    ok: true,
-    session: chzzkSessionManager.getStatus()
-  }));
+  app.get(
+    "/api/chzzk/session/status",
+    { preHandler: requireFirebaseUser },
+    async (request) => {
+      const user = getRequiredFirebaseUser(request);
 
-  app.post("/api/chzzk/session/stop", async () => {
-    chzzkSessionManager.stop();
+      return {
+        ok: true,
+        session: chzzkSessionManager.getStatus(user.uid)
+      };
+    }
+  );
 
-    return {
-      ok: true,
-      session: chzzkSessionManager.getStatus()
-    };
-  });
+  app.post(
+    "/api/chzzk/session/stop",
+    { preHandler: requireFirebaseUser },
+    async (request) => {
+      const user = getRequiredFirebaseUser(request);
+      const stopped = chzzkSessionManager.stop(user.uid);
+
+      return {
+        ok: true,
+        stopped,
+        session: chzzkSessionManager.getStatus(user.uid)
+      };
+    }
+  );
 }
 
 function getWebAppUrl() {

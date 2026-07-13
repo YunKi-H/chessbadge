@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getFirebaseAuth, getFirestoreDb } from "./admin.js";
 import { consumeFirebaseLoginCode } from "./login-exchange.js";
+import { getRequiredFirebaseUser, requireFirebaseUser } from "../auth/firebase.js";
 
 const loginExchangeBodySchema = z.object({
   code: z.string().min(1)
@@ -33,6 +34,19 @@ export async function registerFirebaseRoutes(app: FastifyInstance) {
         user: exchange.user
       });
   });
+
+  app.get(
+    "/api/me",
+    { preHandler: requireFirebaseUser },
+    async (request, reply) => {
+      return reply
+        .header("Cache-Control", "no-store")
+        .send({
+          ok: true,
+          user: getRequiredFirebaseUser(request)
+        });
+    }
+  );
 
   app.get("/api/firebase/status", async (request, reply) => {
     try {

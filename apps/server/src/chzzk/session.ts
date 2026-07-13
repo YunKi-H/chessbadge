@@ -48,6 +48,7 @@ export interface ChzzkSessionStatus {
 }
 
 class ChzzkSessionManager {
+  private ownerUid: string | null = null;
   private socket: ChzzkSocket | null = null;
   private accessToken: string | null = null;
   private config: ChzzkAuthConfig | null = null;
@@ -61,9 +62,15 @@ class ChzzkSessionManager {
     lastError: null
   };
 
-  async start(config: ChzzkAuthConfig, accessToken: string, logger: FastifyBaseLogger) {
+  async start(
+    ownerUid: string,
+    config: ChzzkAuthConfig,
+    accessToken: string,
+    logger: FastifyBaseLogger
+  ) {
     this.stop();
 
+    this.ownerUid = ownerUid;
     this.config = config;
     this.accessToken = accessToken;
     this.logger = logger;
@@ -124,7 +131,11 @@ class ChzzkSessionManager {
     return this.getStatus();
   }
 
-  stop() {
+  stop(requesterUid?: string) {
+    if (requesterUid && requesterUid !== this.ownerUid) {
+      return false;
+    }
+
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -133,9 +144,15 @@ class ChzzkSessionManager {
     this.status.connected = false;
     this.status.subscribed = false;
     this.status.sessionKey = null;
+    this.ownerUid = null;
+    return true;
   }
 
-  getStatus() {
+  getStatus(requesterUid?: string) {
+    if (requesterUid && requesterUid !== this.ownerUid) {
+      return null;
+    }
+
     return { ...this.status };
   }
 

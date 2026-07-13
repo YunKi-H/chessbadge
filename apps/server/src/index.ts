@@ -5,6 +5,7 @@ import fastifyStatic from "@fastify/static";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerChzzkAuthRoutes } from "./auth/chzzk/routes.js";
+import { registerFirebaseAuthentication } from "./auth/firebase.js";
 import { registerFirebaseRoutes } from "./firebase/routes.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerOverlayRoutes } from "./routes/overlay.js";
@@ -21,6 +22,8 @@ await app.register(cors, {
   origin: true,
   credentials: true
 });
+
+await registerFirebaseAuthentication(app);
 
 if (process.env.NODE_ENV === "production") {
   const currentDir = dirname(fileURLToPath(import.meta.url));
