@@ -3,6 +3,7 @@ import { signInWithCustomToken } from "firebase/auth";
 import { getFirebaseClientAuth } from "../firebase/client";
 import { getCurrentApiUser } from "../api/client";
 import type { ChzzkLoginMode } from "@chessbadge/core";
+import { Link, useNavigate } from "react-router-dom";
 
 type LoginState =
   | { status: "loading" }
@@ -21,6 +22,7 @@ interface LoginExchangeResponse {
 const pendingLogins = new Map<string, Promise<LoginExchangeResponse>>();
 
 export function ChzzkAuthCallback() {
+  const navigate = useNavigate();
   const [code] = useState(() =>
     new URLSearchParams(window.location.search).get("code")
   );
@@ -37,18 +39,18 @@ export function ChzzkAuthCallback() {
 
     void completeLogin(code)
       .then((result) => {
-        window.history.replaceState({}, "", `/${result.mode}`);
         setState({
           status: "success",
           displayName: result.user.displayName,
           mode: result.mode
         });
+        void navigate("/auth/chzzk/callback", { replace: true });
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "로그인에 실패했습니다.";
         setState({ status: "error", message });
       });
-  }, [code]);
+  }, [code, navigate]);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
@@ -62,12 +64,12 @@ export function ChzzkAuthCallback() {
             <p className="mt-2 text-slate-300">
               {state.displayName} 계정을 {loginModeLabel(state.mode)} 모드로 연결했습니다.
             </p>
-            <a
-              href={`/${state.mode}`}
+            <Link
+              to={`/${state.mode}`}
               className="mt-5 inline-flex rounded-md bg-emerald-500 px-4 py-2 font-semibold text-slate-950 transition hover:bg-emerald-400"
             >
               계속하기
-            </a>
+            </Link>
           </>
         ) : null}
         {state.status === "error" ? (

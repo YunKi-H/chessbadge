@@ -29,6 +29,23 @@ The browser does not access Firestore directly. React authenticates with Firebas
 then calls the Fastify API. Fastify verifies the Firebase ID token and accesses
 Firestore through the Admin SDK.
 
+## Web Routes
+
+The Vite application uses React Router and separates each user workflow into its
+own route:
+
+```text
+/                       Streamer/viewer entry point
+/streamer               Chzzk connection and OBS overlay management
+/viewer                 Chzzk login and Chess.com account management
+/auth/chzzk/callback     Shared OAuth completion screen
+/overlay/:publicToken    Minimal, transparent OBS browser source
+```
+
+The OBS route deliberately renders outside the dashboard shell so navigation and
+page backgrounds never appear on the broadcast. Dashboard routes are loaded on
+demand to keep the overlay bundle independent from account-management UI.
+
 ## Chzzk Login Flow
 
 ```text

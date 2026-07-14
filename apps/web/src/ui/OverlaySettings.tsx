@@ -12,6 +12,7 @@ import { getFirebaseClientAuth } from "../firebase/client";
 
 type SettingsState =
   | { status: "loading" }
+  | { status: "signed_out" }
   | { status: "ready"; overlay: OverlayAccess | null }
   | { status: "error"; message: string };
 
@@ -23,7 +24,7 @@ export function OverlaySettings() {
   useEffect(() => {
     return onAuthStateChanged(getFirebaseClientAuth(), (user) => {
       if (!user) {
-        setState({ status: "error", message: "스트리머 로그인이 필요합니다." });
+        setState({ status: "signed_out" });
         return;
       }
 
@@ -58,6 +59,16 @@ export function OverlaySettings() {
 
       {state.status === "loading" ? (
         <p className="text-sm text-slate-400">불러오는 중</p>
+      ) : null}
+
+      {state.status === "signed_out" ? (
+        <a
+          href="/api/auth/chzzk/start?mode=streamer"
+          className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-500 px-4 font-semibold text-slate-950 transition hover:bg-emerald-400"
+        >
+          <Power aria-hidden="true" size={18} />
+          치지직 스트리머 연결
+        </a>
       ) : null}
 
       {state.status === "error" ? (

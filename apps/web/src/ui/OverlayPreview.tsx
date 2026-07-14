@@ -34,6 +34,11 @@ export function OverlayPreview() {
 
   return (
     <section className="max-w-xl">
+      {messages.length === 0 ? (
+        <div className="border-l-2 border-slate-700 py-2 pl-4 text-sm text-slate-400">
+          채팅 수신 대기 중
+        </div>
+      ) : null}
       <div className="space-y-3">
         {messages.map((message) => (
           <div
