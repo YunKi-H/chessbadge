@@ -5,12 +5,14 @@ import {
   ExternalLink,
   Link,
   LoaderCircle,
-  ShieldAlert
+  ShieldAlert,
+  Unlink
 } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   confirmChessComVerification,
   createChessComVerification,
+  disconnectChessComAccount,
   getChessComAccount,
   linkChessComAccount,
   type ChessComAccount,
@@ -37,6 +39,7 @@ export function ChessComAccountSettings() {
   const [verification, setVerification] = useState<ChessComVerificationChallenge | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   useEffect(() => {
     return onAuthStateChanged(getFirebaseClientAuth(), (user) => {
@@ -126,6 +129,26 @@ export function ChessComAccountSettings() {
     setCopied(true);
   };
 
+  const disconnectAccount = async () => {
+    if (!window.confirm("Chess.com 계정 연동과 현재 채팅 배지를 해제할까요?")) {
+      return;
+    }
+
+    setDisconnecting(true);
+
+    try {
+      await disconnectChessComAccount();
+      setState({ status: "ready", account: null });
+      setUsername("");
+      setVerification(null);
+      setCopied(false);
+    } catch (error) {
+      setVerificationError(error);
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
   const setVerificationError = (error: unknown) => {
     setState((current) => ({
       status: "error",
@@ -175,15 +198,30 @@ export function ChessComAccountSettings() {
           </p>
         </div>
         {account ? (
-          <a
-            href={account.profileUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300 hover:text-emerald-200"
-          >
-            {account.username}
-            <ExternalLink aria-hidden="true" size={15} />
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href={account.profileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300 hover:text-emerald-200"
+            >
+              {account.username}
+              <ExternalLink aria-hidden="true" size={15} />
+            </a>
+            <button
+              type="button"
+              disabled={disconnecting}
+              onClick={() => void disconnectAccount()}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-slate-800 px-3 text-sm font-medium text-red-200 ring-1 ring-white/10 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {disconnecting ? (
+                <LoaderCircle className="animate-spin" size={15} />
+              ) : (
+                <Unlink size={15} />
+              )}
+              연동 해제
+            </button>
+          </div>
         ) : null}
       </div>
 

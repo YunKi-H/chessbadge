@@ -14,6 +14,7 @@ import {
 } from "./client.js";
 import {
   ChessAccountConflictError,
+  disconnectChessComAccount,
   getUserChessComAccount,
   saveUnverifiedChessComAccount,
   type StoredChessComAccount
@@ -44,6 +45,7 @@ export interface ChessComRouteDependencies {
   getProfile(username: string): Promise<ChessComProfile>;
   getAccount(uid: string): Promise<StoredChessComAccount | null>;
   saveAccount(uid: string, player: ChessComPlayer): Promise<StoredChessComAccount>;
+  disconnectAccount(uid: string, chzzkChannelId: string): Promise<boolean>;
   createVerification(uid: string): Promise<ChessComVerificationChallenge>;
   getPendingVerification(uid: string): Promise<PendingChessComVerification>;
   completeVerification(
@@ -114,6 +116,30 @@ export async function registerChessComRoutes(
     }
   );
 
+  app.delete(
+    "/api/chess/chesscom/account",
+    { preHandler: dependencies.authenticate },
+    async (request, reply) => {
+      const user = getRequiredFirebaseUser(request);
+
+      if (!user.chzzkChannelId) {
+        return reply.code(403).send({ error: "치지직 계정 정보가 없습니다." });
+      }
+
+      const disconnected = await dependencies.disconnectAccount(
+        user.uid,
+        user.chzzkChannelId
+      );
+
+      if (!disconnected) {
+        return reply.code(404).send({ error: "연결된 Chess.com 계정이 없습니다." });
+      }
+
+      dependencies.invalidateBadge(user.chzzkChannelId);
+      return { ok: true, account: null };
+    }
+  );
+
   app.post(
     "/api/chess/chesscom/verification",
     { preHandler: dependencies.authenticate },
@@ -179,6 +205,7 @@ function defaultDependencies(): ChessComRouteDependencies {
     getProfile: (username) => getClient().getProfile(username),
     getAccount: getUserChessComAccount,
     saveAccount: saveUnverifiedChessComAccount,
+    disconnectAccount: disconnectChessComAccount,
     createVerification: createChessComLocationChallenge,
     getPendingVerification: getPendingChessComLocationChallenge,
     completeVerification: completeChessComLocationVerification,

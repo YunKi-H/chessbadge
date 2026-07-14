@@ -160,6 +160,11 @@ the denormalized Chzzk badge. Ties prefer Rapid, then Blitz, then Bullet.
 Refreshing the same Chess.com account recalculates and refreshes the badge;
 changing accounts or losing all supported ratings clears it.
 
+Disconnecting clears the user pointer, verification fields, selected speed,
+pending challenge, and Chzzk badge in one transaction. The detached account and
+rating documents may remain for future refreshes, but `uid` and `verifiedAt`
+must both be null so ownership cannot transfer implicitly.
+
 For Chess.com, the first registration uses the read-only PubAPI and therefore
 always writes `verifiedAt: null`. A public username and public rating are not
 proof of account ownership. Unverified accounts must never populate the

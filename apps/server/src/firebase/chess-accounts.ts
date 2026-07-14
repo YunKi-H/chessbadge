@@ -22,6 +22,65 @@ export class ChessAccountConflictError extends Error {
   }
 }
 
+export async function disconnectChessComAccount(
+  uid: string,
+  chzzkChannelId: string
+): Promise<boolean> {
+  const db = getFirestoreDb();
+  const userRef = db.collection("users").doc(uid);
+  const chzzkAccountRef = db.collection("chzzkAccounts").doc(chzzkChannelId);
+
+  return db.runTransaction(async (transaction) => {
+    const [userSnapshot, chzzkAccountSnapshot] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(chzzkAccountRef)
+    ]);
+    const accountId = userSnapshot.data()?.chessAccountIds?.chesscom;
+
+    if (typeof accountId !== "string") {
+      return false;
+    }
+
+    const accountRef = db.collection("chessAccounts").doc(accountId);
+    const challengeRef = db.collection("chessVerificationChallenges").doc(accountId);
+    const [accountSnapshot, challengeSnapshot] = await Promise.all([
+      transaction.get(accountRef),
+      transaction.get(challengeRef)
+    ]);
+    const account = accountSnapshot.data();
+
+    if (
+      !account ||
+      account.uid !== uid ||
+      account.provider !== "chesscom" ||
+      chzzkAccountSnapshot.data()?.uid !== uid
+    ) {
+      return false;
+    }
+
+    const now = FieldValue.serverTimestamp();
+    transaction.update(accountRef, {
+      uid: null,
+      verifiedAt: null,
+      verificationMethod: null,
+      selectedSpeed: null,
+      disconnectedAt: now,
+      updatedAt: now
+    });
+    transaction.update(userRef, {
+      "chessAccountIds.chesscom": FieldValue.delete(),
+      updatedAt: now
+    });
+    transaction.update(chzzkAccountRef, { badge: null, updatedAt: now });
+
+    if (challengeSnapshot.exists) {
+      transaction.delete(challengeRef);
+    }
+
+    return true;
+  });
+}
+
 export async function saveUnverifiedChessComAccount(
   uid: string,
   player: ChessComPlayer

@@ -110,6 +110,7 @@ GET  /api/chzzk/session/status
 POST /api/chzzk/session/stop
 GET  /api/chess/chesscom/account
 POST /api/chess/chesscom/account
+DELETE /api/chess/chesscom/account
 POST /api/chess/chesscom/verification
 POST /api/chess/chesscom/verification/confirm
 ```
@@ -145,6 +146,11 @@ Chess.com data recalculates the highest rating. Incoming chat resolves the
 badge by `senderChannelId` through a 60-second in-memory cache and includes it in
 the existing SSE overlay event. A badge lookup failure degrades to a normal chat
 message without dropping chat delivery.
+
+Disconnecting a Chess.com account clears the user pointer, ownership
+verification, pending challenge, selected speed, and denormalized Chzzk badge
+in one transaction. Rating snapshots remain detached for later refresh, but no
+verification state is inherited by a future link.
 
 ## First Milestone
 

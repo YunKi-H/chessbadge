@@ -150,6 +150,31 @@ test("returns 404 when the Chess.com account does not exist", async () => {
   await app.close();
 });
 
+test("disconnects the viewer's Chess.com account and invalidates its badge", async () => {
+  let disconnectedUid: string | null = null;
+  let invalidatedChannelId: string | null = null;
+  const app = await createApp({
+    disconnectAccount: async (uid) => {
+      disconnectedUid = uid;
+      return true;
+    },
+    invalidateBadge: (channelId) => {
+      invalidatedChannelId = channelId;
+    }
+  });
+  const response = await app.inject({
+    method: "DELETE",
+    url: "/api/chess/chesscom/account",
+    headers: { authorization: "Bearer valid-token" }
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(disconnectedUid, "chzzk:viewer");
+  assert.equal(invalidatedChannelId, "viewer");
+  assert.deepEqual(response.json(), { ok: true, account: null });
+  await app.close();
+});
+
 async function createApp(overrides: Partial<ChessComRouteDependencies> = {}) {
   const app = Fastify();
   await registerFirebaseAuthentication(app);
@@ -168,6 +193,7 @@ async function createApp(overrides: Partial<ChessComRouteDependencies> = {}) {
       verified: false,
       selectedSpeed: null
     }),
+    disconnectAccount: async () => false,
     createVerification: async () => ({
       code: "chessbadge-test-code",
       expiresAt: new Date("2026-07-17T00:00:00.000Z")

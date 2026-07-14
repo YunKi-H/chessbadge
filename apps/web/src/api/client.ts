@@ -79,6 +79,17 @@ export async function linkChessComAccount(username: string): Promise<ChessComAcc
   return body.account;
 }
 
+export async function disconnectChessComAccount(): Promise<void> {
+  const response = await authenticatedFetch("/api/chess/chesscom/account", {
+    method: "DELETE"
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok || !isChessComAccountResponse(body) || body.account !== null) {
+    throw new Error(apiError(body, "Chess.com 계정 연동을 해제하지 못했습니다."));
+  }
+}
+
 export async function createChessComVerification(): Promise<ChessComVerificationChallenge> {
   const response = await authenticatedFetch("/api/chess/chesscom/verification", {
     method: "POST"
