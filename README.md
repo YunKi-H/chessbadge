@@ -172,3 +172,18 @@ The first product risk to remove is Chzzk chat ingestion:
 
 The existing Chzzk chat proof of concept still runs without Firebase credentials.
 Firebase is initialized lazily when an auth or database feature first uses it.
+
+## Firestore Emulator Tests
+
+Java 17 or newer is required. The integration suite starts an isolated Firestore
+Emulator with the non-production project ID `demo-chessbadge-emulator`, loads
+`firestore.rules`, runs the tests, and stops the emulator automatically:
+
+```sh
+pnpm test:emulator
+```
+
+The suite covers Chess.com linking, verification failures, highest-rating badge
+selection, disconnect cleanup, duplicate-account protection, and denial of
+direct unauthenticated Firestore access. It does not use values from `.env` or
+connect to the production Firestore project.

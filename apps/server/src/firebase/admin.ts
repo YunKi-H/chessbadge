@@ -27,6 +27,11 @@ export function getFirebaseAdminApp(): App {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
   const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
+  if (process.env.FIRESTORE_EMULATOR_HOST) {
+    app = initializeApp({ projectId });
+    return app;
+  }
+
   app = initializeApp({
     credential:
       clientEmail && privateKey
