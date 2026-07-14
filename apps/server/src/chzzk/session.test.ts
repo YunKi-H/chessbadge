@@ -121,11 +121,15 @@ test("a failed start removes only the failed streamer's session", async () => {
 
 function status(): ChzzkSessionStatus {
   return {
+    health: "healthy_idle",
     connected: true,
     sessionKey: "session-key",
     subscribed: true,
     startedAt: "2026-07-14T00:00:00.000Z",
     lastChatAt: null,
+    lastHealthCheckAt: "2026-07-14T00:00:00.000Z",
+    lastHealthyAt: "2026-07-14T00:00:00.000Z",
+    reconnectAttempt: 0,
     lastError: null
   };
 }

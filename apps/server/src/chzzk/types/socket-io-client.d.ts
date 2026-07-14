@@ -4,6 +4,8 @@ declare module "socket.io-client" {
     reconnection?: boolean;
     reconnectionAttempts?: number;
     reconnectionDelay?: number;
+    forceNew?: boolean;
+    timeout?: number;
   }
 
   interface SocketIoClientSocket {

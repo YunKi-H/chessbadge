@@ -70,6 +70,13 @@ in the background with a concurrency limit of five. Failed restores retry with
 exponential backoff; UID-scoped serialization prevents a concurrent manual stop
 from being overwritten by recovery.
 
+Each Chzzk socket has a control-plane watchdog. Connection and subscription
+acknowledgements must arrive within ten seconds, then `/open/v1/sessions` is
+checked every minute. Two consecutive responses that do not contain the active
+session with a `CHAT` subscription trigger a fresh session URL with capped
+exponential backoff. Session-list request failures are reported as `unknown` and
+do not force reconnection. Chat inactivity is never treated as a failure.
+
 Authenticated streamers can create, rotate, enable, and disable a 256-bit public
 overlay token. `/overlay/{token}` is the OBS browser-source page and
 `/events/overlay/{token}` streams only that token's streamer events. Rotation or

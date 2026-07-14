@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const CHZZK_REQUEST_TIMEOUT_MS = 10_000;
+
 const tokenResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
@@ -15,6 +17,22 @@ const sessionResponseSchema = z.object({
 const userResponseSchema = z.object({
   channelId: z.string().min(1),
   channelName: z.string().min(1)
+});
+
+const sessionListResponseSchema = z.object({
+  data: z.array(
+    z.object({
+      sessionKey: z.string(),
+      connectedDate: z.string(),
+      disconnectedDate: z.string().nullable().optional(),
+      subscribedEvents: z.array(
+        z.object({
+          eventType: z.string(),
+          channelId: z.string().optional()
+        })
+      )
+    })
+  )
 });
 
 export interface ChzzkAuthConfig {
@@ -39,6 +57,16 @@ export interface ChzzkSessionResponse {
 export interface ChzzkUserResponse {
   channelId: string;
   channelName: string;
+}
+
+export interface ChzzkUserSession {
+  sessionKey: string;
+  connectedDate: string;
+  disconnectedDate: string | null;
+  subscribedEvents: Array<{
+    eventType: string;
+    channelId: string | null;
+  }>;
 }
 
 export class ChzzkTokenRequestError extends Error {
@@ -109,6 +137,7 @@ async function requestChzzkToken(
 ): Promise<ChzzkTokenResponse> {
   const response = await fetch(`${config.openApiBaseUrl}/auth/v1/token`, {
     method: "POST",
+    signal: AbortSignal.timeout(CHZZK_REQUEST_TIMEOUT_MS),
     headers: {
       "Content-Type": "application/json"
     },
@@ -139,6 +168,7 @@ export async function createChzzkUserSession(
 ): Promise<ChzzkSessionResponse> {
   const response = await fetch(`${config.openApiBaseUrl}/open/v1/sessions/auth`, {
     method: "GET",
+    signal: AbortSignal.timeout(CHZZK_REQUEST_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json"
@@ -160,6 +190,7 @@ export async function getChzzkCurrentUser(
 ): Promise<ChzzkUserResponse> {
   const response = await fetch(`${config.openApiBaseUrl}/open/v1/users/me`, {
     method: "GET",
+    signal: AbortSignal.timeout(CHZZK_REQUEST_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json"
@@ -185,6 +216,7 @@ export async function subscribeChzzkChatEvent(
 
   const response = await fetch(url, {
     method: "POST",
+    signal: AbortSignal.timeout(CHZZK_REQUEST_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json"
@@ -198,6 +230,42 @@ export async function subscribeChzzkChatEvent(
   }
 
   return unwrapChzzkContent(body);
+}
+
+export async function getChzzkUserSessions(
+  config: ChzzkAuthConfig,
+  accessToken: string
+): Promise<ChzzkUserSession[]> {
+  const url = new URL(`${config.openApiBaseUrl}/open/v1/sessions`);
+  url.searchParams.set("size", "50");
+  url.searchParams.set("page", "0");
+
+  const response = await fetch(url, {
+    method: "GET",
+    signal: AbortSignal.timeout(CHZZK_REQUEST_TIMEOUT_MS),
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    }
+  });
+
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(`Chzzk session list request failed with status ${response.status}`);
+  }
+
+  const parsed = sessionListResponseSchema.parse(unwrapChzzkContent(body));
+
+  return parsed.data.map((session) => ({
+    sessionKey: session.sessionKey,
+    connectedDate: session.connectedDate,
+    disconnectedDate: session.disconnectedDate ?? null,
+    subscribedEvents: session.subscribedEvents.map((event) => ({
+      eventType: event.eventType,
+      channelId: event.channelId ?? null
+    }))
+  }));
 }
 
 function unwrapChzzkContent(body: unknown) {

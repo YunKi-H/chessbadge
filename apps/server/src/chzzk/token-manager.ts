@@ -11,6 +11,7 @@ import {
   saveChzzkStreamerTokens,
   type StoredChzzkTokens
 } from "../firebase/chzzk-tokens.js";
+import { getChzzkStreamerSessionIntent } from "../firebase/users.js";
 import { chzzkSessionManager } from "./session.js";
 
 const REFRESH_WINDOW_MS = 5 * 60 * 1_000;
@@ -101,6 +102,14 @@ class ChzzkTokenManager {
     state.timer = null;
 
     try {
+      const intent = await getChzzkStreamerSessionIntent(uid);
+
+      if (intent.tokenStatus !== "active") {
+        this.stopAutoRefresh(uid);
+        state.logger.warn({ uid }, "Chzzk token auto-refresh stopped pending reauthentication");
+        return;
+      }
+
       const refreshedToken = await this.refresh(uid, state.config);
 
       if (this.autoRefreshStates.get(uid) !== state) {
