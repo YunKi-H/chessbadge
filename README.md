@@ -11,6 +11,9 @@ ChessBadge is a Chzzk-first chess rating chat overlay for streamers.
 - Realtime: SSE first, WebSocket later if needed
 - Deploy target: ECS Fargate
 
+Local development uses Node.js 24 LTS, pnpm 11, and Java 21 or newer for the
+Firestore Emulator. Production containers pin Node.js 24.18.0.
+
 ## Repository Layout
 
 ```text
@@ -175,7 +178,7 @@ Firebase is initialized lazily when an auth or database feature first uses it.
 
 ## Firestore Emulator Tests
 
-Java 17 or newer is required. The integration suite starts an isolated Firestore
+Java 21 or newer is required. The integration suite starts an isolated Firestore
 Emulator with the non-production project ID `demo-chessbadge-emulator`, loads
 `firestore.rules`, runs the tests, and stops the emulator automatically:
 

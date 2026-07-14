@@ -56,7 +56,7 @@ interface SocketIoPacket {
 
 const systemMessageSchema = z.object({
   type: z.string(),
-  data: z.record(z.unknown()).optional()
+  data: z.record(z.string(), z.unknown()).optional()
 });
 
 const chatMessageSchema = z.object({
@@ -69,7 +69,7 @@ const chatMessageSchema = z.object({
     userRoleCode: z.string().optional()
   }),
   content: z.string(),
-  emojis: z.record(z.string()).optional(),
+  emojis: z.record(z.string(), z.string()).optional(),
   messageTime: z.number()
 });
 

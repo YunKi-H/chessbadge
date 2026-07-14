@@ -16,8 +16,7 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "eslint": "^9.30.0",
-    "typescript": "^5.8.3"
+    "eslint": "^10.7.0",
+    "typescript": "^5.9.3"
   }
 }
-

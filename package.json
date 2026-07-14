@@ -2,6 +2,10 @@
   "name": "chessbadge",
   "private": true,
   "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "pnpm": ">=11.7.0"
+  },
   "scripts": {
     "dev": "pnpm --filter @chessbadge/core build && pnpm --parallel --filter @chessbadge/server --filter @chessbadge/web dev",
     "dev:server": "pnpm --filter @chessbadge/server dev",
@@ -13,12 +17,12 @@
     "lint": "pnpm -r lint"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
-    "firebase-tools": "14.26.0",
+    "firebase-tools": "15.23.0",
     "globals": "^17.7.0",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0"
   }
 }
