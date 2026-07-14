@@ -111,7 +111,15 @@ token fields. The current in-process refresh lock assumes one ECS server task.
 {
   streamerUid: string;
   active: boolean;
-  theme: Record<string, unknown>;
+  theme: {
+    backgroundVisible: boolean;
+    backgroundColor: string; // #RRGGBB
+    backgroundOpacity: number; // integer from 0 through 100
+    nicknameVisible: boolean;
+    nicknameColorMode: "fixed" | "by_user";
+    nicknameColor: string; // #RRGGBB, used by fixed mode
+    messageColor: string; // #RRGGBB
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -122,6 +130,11 @@ to resist guessing and must be replaceable from the streamer dashboard. Rotated
 tokens remain as inactive documents so existing browser sources stop resolving.
 The active token is also stored on `streamers/{firebaseUid}.overlayToken` for a
 direct authenticated dashboard lookup.
+
+Legacy documents with an empty `theme` use the default appearance. Rotating an
+overlay token copies the current theme to the new document. Saving appearance
+settings publishes an SSE `appearance` event so an open OBS browser source can
+update without changing its URL or reloading the page.
 
 Public overlay and SSE paths contain this bearer token. Application and
 infrastructure access logs must redact the token path segment.

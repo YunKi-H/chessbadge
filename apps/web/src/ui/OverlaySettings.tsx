@@ -1,11 +1,25 @@
 import { useEffect, useState } from "react";
-import { Copy, Link, Power, RefreshCw } from "lucide-react";
+import {
+  DEFAULT_OVERLAY_APPEARANCE,
+  type OverlayAppearance
+} from "@chessbadge/core";
+import {
+  ChevronDown,
+  Copy,
+  Link,
+  Palette,
+  Power,
+  RefreshCw,
+  RotateCcw,
+  Save
+} from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   disableOverlayAccess,
   enableOverlayAccess,
   getOverlayAccess,
   rotateOverlayAccess,
+  updateOverlayAppearance,
   type OverlayAccess
 } from "../api/client";
 import { getFirebaseClientAuth } from "../firebase/client";
@@ -16,10 +30,46 @@ type SettingsState =
   | { status: "ready"; overlay: OverlayAccess | null }
   | { status: "error"; message: string };
 
-export function OverlaySettings() {
+const MESSAGE_COLOR_SWATCHES = [
+  "#FFFFFF",
+  "#E2E8F0",
+  "#FDE047",
+  "#86EFAC",
+  "#7DD3FC"
+] as const;
+
+const BACKGROUND_COLOR_SWATCHES = [
+  "#020617",
+  "#0F172A",
+  "#172554",
+  "#052E16",
+  "#3F1D2E"
+] as const;
+
+const NICKNAME_COLOR_SWATCHES = [
+  "#7DD3FC",
+  "#86EFAC",
+  "#FDE047",
+  "#FDA4AF",
+  "#C4B5FD",
+  "#FDBA74"
+] as const;
+
+const APPEARANCE_EXPANDED_STORAGE_KEY =
+  "chessbadge.streamer.appearance-expanded";
+
+export function OverlaySettings({
+  onAppearanceChange
+}: {
+  onAppearanceChange: (appearance: OverlayAppearance) => void;
+}) {
   const [state, setState] = useState<SettingsState>({ status: "loading" });
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [appearanceDirty, setAppearanceDirty] = useState(false);
+  const [appearanceExpanded, setAppearanceExpanded] = useState(
+    readAppearanceExpanded
+  );
 
   useEffect(() => {
     return onAuthStateChanged(getFirebaseClientAuth(), (user) => {
@@ -29,10 +79,18 @@ export function OverlaySettings() {
       }
 
       void getOverlayAccess()
-        .then((overlay) => setState({ status: "ready", overlay }))
-        .catch((error: unknown) => setState(toErrorState(error)));
+        .then((overlay) => {
+          setState({ status: "ready", overlay });
+          if (overlay) {
+            onAppearanceChange(overlay.appearance);
+          }
+        })
+        .catch((error: unknown) => {
+          setAppearanceExpanded(true);
+          setState(toErrorState(error));
+        });
     });
-  }, []);
+  }, [onAppearanceChange]);
 
   const runUpdate = async (operation: () => Promise<OverlayAccess | null>) => {
     setUpdating(true);
@@ -41,7 +99,12 @@ export function OverlaySettings() {
     try {
       const overlay = await operation();
       setState({ status: "ready", overlay });
+      setAppearanceDirty(false);
+      if (overlay) {
+        onAppearanceChange(overlay.appearance);
+      }
     } catch (error) {
+      setAppearanceExpanded(true);
       setState(toErrorState(error));
     } finally {
       setUpdating(false);
@@ -49,6 +112,37 @@ export function OverlaySettings() {
   };
 
   const overlay = state.status === "ready" ? state.overlay : null;
+
+  const updateAppearanceDraft = (patch: Partial<OverlayAppearance>) => {
+    if (!overlay) {
+      return;
+    }
+
+    const appearance = { ...overlay.appearance, ...patch };
+    setState({
+      status: "ready",
+      overlay: { ...overlay, appearance }
+    });
+    setAppearanceDirty(true);
+    onAppearanceChange(appearance);
+  };
+
+  const toggleAppearanceExpanded = () => {
+    setAppearanceExpanded((current) => {
+      const next = !current;
+
+      try {
+        window.localStorage.setItem(
+          APPEARANCE_EXPANDED_STORAGE_KEY,
+          String(next)
+        );
+      } catch {
+        // The disclosure still works when browser storage is unavailable.
+      }
+
+      return next;
+    });
+  };
 
   return (
     <section className="mb-10 max-w-2xl border-y border-white/10 py-6">
@@ -147,10 +241,263 @@ export function OverlaySettings() {
               </button>
             ) : null}
           </div>
+
+          <div className="border-t border-white/10 pt-5">
+            <button
+              type="button"
+              aria-expanded={appearanceExpanded}
+              aria-controls="overlay-appearance-settings"
+              onClick={toggleAppearanceExpanded}
+              className="flex w-full items-center justify-between gap-4 text-left"
+            >
+              <span className="flex items-center gap-2">
+                <Palette aria-hidden="true" className="text-sky-300" size={18} />
+                <span className="font-semibold text-white">채팅 화면</span>
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                size={18}
+                className={`shrink-0 text-slate-400 transition-transform ${appearanceExpanded ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {appearanceExpanded ? (
+              <div
+                id="overlay-appearance-settings"
+                className="mt-5 space-y-5"
+              >
+              <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
+                채팅 배경
+                <input
+                  type="checkbox"
+                  checked={overlay.appearance.backgroundVisible}
+                  onChange={(event) =>
+                    updateAppearanceDraft({
+                      backgroundVisible: event.target.checked
+                    })
+                  }
+                  className="size-4 accent-emerald-500"
+                />
+              </label>
+
+              <fieldset
+                disabled={!overlay.appearance.backgroundVisible}
+                className="disabled:opacity-40"
+              >
+                <legend className="mb-3 text-sm font-medium text-slate-200">
+                  배경 색상
+                </legend>
+                <div className="flex flex-wrap items-center gap-2">
+                  {BACKGROUND_COLOR_SWATCHES.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      title={color}
+                      aria-label={`배경 색상 ${color}`}
+                      aria-pressed={overlay.appearance.backgroundColor === color}
+                      onClick={() =>
+                        updateAppearanceDraft({ backgroundColor: color })
+                      }
+                      className={`size-8 rounded-md border transition ${overlay.appearance.backgroundColor === color ? "border-emerald-400 ring-2 ring-emerald-400/30" : "border-white/20"}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    title="직접 배경 색상 선택"
+                    aria-label="직접 배경 색상 선택"
+                    value={overlay.appearance.backgroundColor}
+                    onChange={(event) =>
+                      updateAppearanceDraft({
+                        backgroundColor: event.target.value.toUpperCase()
+                      })
+                    }
+                    className="size-8 cursor-pointer rounded-md border border-white/20 bg-transparent p-0.5"
+                  />
+                </div>
+              </fieldset>
+
+              <label className="grid gap-2 text-sm font-medium text-slate-200">
+                <span className="flex items-center justify-between gap-4">
+                  배경 불투명도
+                  <output className="tabular-nums text-slate-400">
+                    {overlay.appearance.backgroundOpacity}%
+                  </output>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  disabled={!overlay.appearance.backgroundVisible}
+                  value={overlay.appearance.backgroundOpacity}
+                  onChange={(event) =>
+                    updateAppearanceDraft({
+                      backgroundOpacity: Number(event.target.value)
+                    })
+                  }
+                  className="w-full accent-emerald-500 disabled:opacity-40"
+                />
+              </label>
+
+              <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
+                닉네임 표시
+                <input
+                  type="checkbox"
+                  checked={overlay.appearance.nicknameVisible}
+                  onChange={(event) =>
+                    updateAppearanceDraft({
+                      nicknameVisible: event.target.checked
+                    })
+                  }
+                  className="size-4 accent-emerald-500"
+                />
+              </label>
+
+              <fieldset
+                disabled={!overlay.appearance.nicknameVisible}
+                className="disabled:opacity-40"
+              >
+                <legend className="mb-3 text-sm font-medium text-slate-200">
+                  닉네임 색상
+                </legend>
+                <div className="inline-flex rounded-md bg-slate-950 p-1 ring-1 ring-white/10">
+                  {([
+                    ["fixed", "단일 색상"],
+                    ["by_user", "사용자별"]
+                  ] as const).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-pressed={overlay.appearance.nicknameColorMode === mode}
+                      onClick={() =>
+                        updateAppearanceDraft({ nicknameColorMode: mode })
+                      }
+                      className={`h-8 rounded px-3 text-sm font-medium transition ${overlay.appearance.nicknameColorMode === mode ? "bg-emerald-500 text-slate-950" : "text-slate-300 hover:text-white"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {overlay.appearance.nicknameColorMode === "fixed" ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {NICKNAME_COLOR_SWATCHES.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        title={color}
+                        aria-label={`닉네임 색상 ${color}`}
+                        aria-pressed={overlay.appearance.nicknameColor === color}
+                        onClick={() =>
+                          updateAppearanceDraft({ nicknameColor: color })
+                        }
+                        className={`size-8 rounded-md border transition ${overlay.appearance.nicknameColor === color ? "border-emerald-400 ring-2 ring-emerald-400/30" : "border-white/20"}`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      title="직접 닉네임 색상 선택"
+                      aria-label="직접 닉네임 색상 선택"
+                      value={overlay.appearance.nicknameColor}
+                      onChange={(event) =>
+                        updateAppearanceDraft({
+                          nicknameColor: event.target.value.toUpperCase()
+                        })
+                      }
+                      className="size-8 cursor-pointer rounded-md border border-white/20 bg-transparent p-0.5"
+                    />
+                  </div>
+                ) : null}
+              </fieldset>
+
+              <fieldset>
+                <legend className="mb-3 text-sm font-medium text-slate-200">
+                  메시지 색상
+                </legend>
+                <div className="flex flex-wrap items-center gap-2">
+                  {MESSAGE_COLOR_SWATCHES.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      title={color}
+                      aria-label={`메시지 색상 ${color}`}
+                      aria-pressed={overlay.appearance.messageColor === color}
+                      onClick={() => updateAppearanceDraft({ messageColor: color })}
+                      className={`size-8 rounded-md border transition ${overlay.appearance.messageColor === color ? "border-emerald-400 ring-2 ring-emerald-400/30" : "border-white/20"}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    title="직접 색상 선택"
+                    aria-label="직접 메시지 색상 선택"
+                    value={overlay.appearance.messageColor}
+                    onChange={(event) =>
+                      updateAppearanceDraft({
+                        messageColor: event.target.value.toUpperCase()
+                      })
+                    }
+                    className="size-8 cursor-pointer rounded-md border border-white/20 bg-transparent p-0.5"
+                  />
+                </div>
+              </fieldset>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={!appearanceDirty || updating}
+                  onClick={() =>
+                    void runUpdate(() =>
+                      updateOverlayAppearance(overlay.appearance)
+                    )
+                  }
+                  className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-500 px-4 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Save aria-hidden="true" size={17} />
+                  화면 설정 저장
+                </button>
+                <button
+                  type="button"
+                  disabled={updating}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "채팅 화면 설정을 모두 기본값으로 초기화할까요?"
+                      )
+                    ) {
+                      void runUpdate(() =>
+                        updateOverlayAppearance({
+                          ...DEFAULT_OVERLAY_APPEARANCE
+                        })
+                      );
+                    }
+                  }}
+                  className="inline-flex h-10 items-center gap-2 rounded-md bg-slate-800 px-4 font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <RotateCcw aria-hidden="true" size={17} />
+                  기본값으로 초기화
+                </button>
+              </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>
   );
+}
+
+function readAppearanceExpanded(): boolean {
+  try {
+    const stored = window.localStorage.getItem(
+      APPEARANCE_EXPANDED_STORAGE_KEY
+    );
+    return stored === null ? true : stored === "true";
+  } catch {
+    return true;
+  }
 }
 
 function toErrorState(error: unknown): SettingsState {

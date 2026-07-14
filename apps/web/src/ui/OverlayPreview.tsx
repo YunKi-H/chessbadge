@@ -1,12 +1,16 @@
 import { type FormEvent, useEffect, useState } from "react";
-import type { ChatOverlayEvent } from "@chessbadge/core";
+import type { ChatOverlayEvent, OverlayAppearance } from "@chessbadge/core";
 import { onAuthStateChanged } from "firebase/auth";
 import { Send } from "lucide-react";
 import { getFirebaseClientAuth } from "../firebase/client";
 import { parseChatOverlayEvent } from "../realtime/chat-event";
 import { RatingBadge } from "./RatingBadge";
+import {
+  overlayBackgroundColor,
+  overlayNicknameColor
+} from "./overlay-appearance";
 
-export function OverlayPreview() {
+export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }) {
   const [messages, setMessages] = useState<ChatOverlayEvent[]>([]);
   const [nickname, setNickname] = useState("");
   const [rating, setRating] = useState("");
@@ -80,19 +84,35 @@ export function OverlayPreview() {
             아직 표시할 메시지가 없습니다
           </div>
         ) : null}
-        <div className="w-full space-y-2">
+        <div
+          className={`w-full ${appearance.backgroundVisible ? "space-y-2" : "space-y-1"}`}
+        >
           {messages.map((message) => (
             <div
               key={message.id}
-              className="flex w-fit max-w-full min-w-0 items-start gap-2 rounded-md bg-slate-900/90 px-3 py-2 shadow-lg ring-1 ring-white/10"
+              className={`flex w-fit max-w-full min-w-0 items-start gap-2 rounded-md ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/10" : "p-0"}`}
+              style={{
+                backgroundColor: overlayBackgroundColor(appearance)
+              }}
             >
               {message.rating ? (
                 <RatingBadge rating={message.rating} />
               ) : null}
-              <span className="max-w-40 shrink-0 truncate font-semibold text-sky-200">
-                {message.nickname}:
-              </span>
-              <span className="min-w-0 break-words text-slate-100">
+              {appearance.nicknameVisible ? (
+                <span
+                  className="max-w-40 shrink-0 truncate font-semibold"
+                  style={{ color: overlayNicknameColor(appearance, message) }}
+                >
+                  {message.nickname}:
+                </span>
+              ) : null}
+              <span
+                className="min-w-0 break-words"
+                style={{
+                  color: appearance.messageColor,
+                  textShadow: "0 1px 2px rgb(0 0 0 / 85%)"
+                }}
+              >
                 {message.content}
               </span>
             </div>

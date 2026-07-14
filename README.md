@@ -128,6 +128,11 @@ endpoints are:
 GET  /api/me
 GET  /api/chzzk/session/status
 POST /api/chzzk/session/stop
+GET  /api/overlay
+POST /api/overlay
+POST /api/overlay/rotate
+POST /api/overlay/disable
+PATCH /api/overlay/appearance
 GET  /api/chess/chesscom/account
 POST /api/chess/chesscom/account
 DELETE /api/chess/chesscom/account

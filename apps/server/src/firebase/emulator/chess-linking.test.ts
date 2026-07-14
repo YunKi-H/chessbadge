@@ -21,6 +21,12 @@ import {
   claimManualChessComRatingRefresh,
   completeChessComRatingRefresh
 } from "../chess-rating-refresh.js";
+import {
+  enableStreamerOverlayAccess,
+  getStreamerOverlayAccess,
+  rotateStreamerOverlayAccess,
+  updateStreamerOverlayAppearance
+} from "../overlays.js";
 
 const projectId = "demo-chessbadge-emulator";
 const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
@@ -161,6 +167,43 @@ test("deployed Firestore rules deny direct unauthenticated client access", async
   );
 
   assert.equal(response.status, 403);
+});
+
+test("overlay appearance persists and survives public token rotation", async () => {
+  const uid = "chzzk:streamer-channel";
+  const db = getFirestoreDb();
+  await db.collection("streamers").doc(uid).set({ uid });
+
+  const initial = await enableStreamerOverlayAccess(uid);
+  assert.deepEqual(initial.appearance, {
+    backgroundVisible: true,
+    backgroundColor: "#020617",
+    backgroundOpacity: 90,
+    nicknameVisible: true,
+    nicknameColorMode: "fixed",
+    nicknameColor: "#7DD3FC",
+    messageColor: "#FFFFFF"
+  });
+
+  const appearance = {
+    backgroundVisible: false,
+    backgroundColor: "#172554",
+    backgroundOpacity: 45,
+    nicknameVisible: false,
+    nicknameColorMode: "by_user" as const,
+    nicknameColor: "#FDE047",
+    messageColor: "#7DD3FC"
+  };
+  await updateStreamerOverlayAppearance(uid, appearance);
+  assert.deepEqual((await getStreamerOverlayAccess(uid))?.appearance, appearance);
+
+  const rotated = await rotateStreamerOverlayAccess(uid);
+  assert.notEqual(rotated.publicToken, initial.publicToken);
+  assert.deepEqual(rotated.appearance, appearance);
+  assert.equal(
+    (await db.collection("overlays").doc(initial.publicToken).get()).data()?.active,
+    false
+  );
 });
 
 function createPlayer(): ChessComPlayer {

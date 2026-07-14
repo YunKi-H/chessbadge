@@ -1,10 +1,20 @@
 import { randomBytes } from "node:crypto";
+import {
+  DEFAULT_OVERLAY_APPEARANCE,
+  type OverlayAppearance
+} from "@chessbadge/core";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirestoreDb } from "./admin.js";
 
 export interface StreamerOverlayAccess {
   publicToken: string;
   active: boolean;
+  appearance: OverlayAppearance;
+}
+
+export interface ActiveOverlayAccess {
+  streamerUid: string;
+  appearance: OverlayAppearance;
 }
 
 export class StreamerOverlayAccessError extends Error {
@@ -36,7 +46,11 @@ export async function getStreamerOverlayAccess(
     return null;
   }
 
-  return { publicToken, active: data.active };
+  return {
+    publicToken,
+    active: data.active,
+    appearance: normalizeOverlayAppearance(data.theme)
+  };
 }
 
 export async function enableStreamerOverlayAccess(
@@ -85,9 +99,42 @@ export async function disableStreamerOverlayAccess(
   });
 }
 
-export async function resolveActiveOverlayStreamer(
+export async function updateStreamerOverlayAppearance(
+  streamerUid: string,
+  appearance: OverlayAppearance
+): Promise<StreamerOverlayAccess> {
+  const db = getFirestoreDb();
+  const streamerRef = db.collection("streamers").doc(streamerUid);
+
+  return db.runTransaction(async (transaction) => {
+    const streamer = await transaction.get(streamerRef);
+    const publicToken = streamer.data()?.overlayToken;
+
+    if (!streamer.exists || typeof publicToken !== "string") {
+      throw new StreamerOverlayAccessError();
+    }
+
+    const overlayRef = db.collection("overlays").doc(publicToken);
+    const overlay = await transaction.get(overlayRef);
+    const data = overlay.data();
+
+    if (!data || data.streamerUid !== streamerUid || typeof data.active !== "boolean") {
+      throw new StreamerOverlayAccessError();
+    }
+
+    transaction.set(
+      overlayRef,
+      { theme: appearance, updatedAt: FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+
+    return { publicToken, active: data.active, appearance };
+  });
+}
+
+export async function resolveActiveOverlayAccess(
   publicToken: string
-): Promise<string | null> {
+): Promise<ActiveOverlayAccess | null> {
   const overlay = await getFirestoreDb().collection("overlays").doc(publicToken).get();
   const data = overlay.data();
 
@@ -95,7 +142,56 @@ export async function resolveActiveOverlayStreamer(
     return null;
   }
 
-  return data.streamerUid;
+  return {
+    streamerUid: data.streamerUid,
+    appearance: normalizeOverlayAppearance(data.theme)
+  };
+}
+
+export function normalizeOverlayAppearance(value: unknown): OverlayAppearance {
+  if (!value || typeof value !== "object") {
+    return { ...DEFAULT_OVERLAY_APPEARANCE };
+  }
+
+  const appearance = value as Partial<OverlayAppearance>;
+
+  return {
+    backgroundVisible:
+      typeof appearance.backgroundVisible === "boolean"
+        ? appearance.backgroundVisible
+        : DEFAULT_OVERLAY_APPEARANCE.backgroundVisible,
+    backgroundColor:
+      typeof appearance.backgroundColor === "string" &&
+      /^#[0-9A-Fa-f]{6}$/.test(appearance.backgroundColor)
+        ? appearance.backgroundColor.toUpperCase()
+        : DEFAULT_OVERLAY_APPEARANCE.backgroundColor,
+    backgroundOpacity:
+      typeof appearance.backgroundOpacity === "number" &&
+      Number.isInteger(appearance.backgroundOpacity) &&
+      appearance.backgroundOpacity >= 0 &&
+      appearance.backgroundOpacity <= 100
+        ? appearance.backgroundOpacity
+        : DEFAULT_OVERLAY_APPEARANCE.backgroundOpacity,
+    nicknameVisible:
+      typeof appearance.nicknameVisible === "boolean"
+        ? appearance.nicknameVisible
+        : DEFAULT_OVERLAY_APPEARANCE.nicknameVisible,
+    nicknameColorMode:
+      appearance.nicknameColorMode === "fixed" ||
+      appearance.nicknameColorMode === "by_user"
+        ? appearance.nicknameColorMode
+        : DEFAULT_OVERLAY_APPEARANCE.nicknameColorMode,
+    nicknameColor:
+      typeof appearance.nicknameColor === "string" &&
+      /^#[0-9A-Fa-f]{6}$/.test(appearance.nicknameColor)
+        ? appearance.nicknameColor.toUpperCase()
+        : DEFAULT_OVERLAY_APPEARANCE.nicknameColor,
+    messageColor:
+      typeof appearance.messageColor === "string" &&
+      /^#[0-9A-Fa-f]{6}$/.test(appearance.messageColor)
+        ? appearance.messageColor.toUpperCase()
+        : DEFAULT_OVERLAY_APPEARANCE.messageColor
+  };
 }
 
 async function createOrRotateOverlayAccess(
@@ -124,18 +220,20 @@ async function createOrRotateOverlayAccess(
       }
 
       const existingToken = streamer.data()?.overlayToken;
+      let appearance = { ...DEFAULT_OVERLAY_APPEARANCE };
 
       if (!rotate && typeof existingToken === "string") {
         const existingRef = db.collection("overlays").doc(existingToken);
         const existing = await transaction.get(existingRef);
 
         if (existing.exists && existing.data()?.streamerUid === streamerUid) {
+          appearance = normalizeOverlayAppearance(existing.data()?.theme);
           transaction.set(
             existingRef,
             { active: true, updatedAt: FieldValue.serverTimestamp() },
             { merge: true }
           );
-          return existingToken;
+          return { publicToken: existingToken, active: true, appearance };
         }
       }
 
@@ -144,6 +242,7 @@ async function createOrRotateOverlayAccess(
         const existing = await transaction.get(existingRef);
 
         if (existing.exists && existing.data()?.streamerUid === streamerUid) {
+          appearance = normalizeOverlayAppearance(existing.data()?.theme);
           transaction.set(
             existingRef,
             { active: false, updatedAt: FieldValue.serverTimestamp() },
@@ -156,7 +255,7 @@ async function createOrRotateOverlayAccess(
       transaction.create(candidateRef, {
         streamerUid,
         active: true,
-        theme: {},
+        theme: appearance,
         createdAt: now,
         updatedAt: now
       });
@@ -166,11 +265,11 @@ async function createOrRotateOverlayAccess(
         { merge: true }
       );
 
-      return candidateToken;
+      return { publicToken: candidateToken, active: true, appearance };
     });
 
     if (result) {
-      return { publicToken: result, active: true };
+      return result;
     }
   }
 

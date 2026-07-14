@@ -2,6 +2,8 @@ export type ChessProvider = "lichess" | "chesscom";
 
 export type ChzzkLoginMode = "streamer" | "viewer";
 
+export type NicknameColorMode = "fixed" | "by_user";
+
 export type ChessSpeed = "bullet" | "blitz" | "rapid" | "classical";
 
 export interface RatingBadge {
@@ -24,3 +26,23 @@ export interface ChatOverlayEvent {
     messageTime: number;
   };
 }
+
+export interface OverlayAppearance {
+  backgroundVisible: boolean;
+  backgroundColor: string;
+  backgroundOpacity: number;
+  nicknameVisible: boolean;
+  nicknameColorMode: NicknameColorMode;
+  nicknameColor: string;
+  messageColor: string;
+}
+
+export const DEFAULT_OVERLAY_APPEARANCE: OverlayAppearance = {
+  backgroundVisible: true,
+  backgroundColor: "#020617",
+  backgroundOpacity: 90,
+  nicknameVisible: true,
+  nicknameColorMode: "fixed",
+  nicknameColor: "#7DD3FC",
+  messageColor: "#FFFFFF"
+};

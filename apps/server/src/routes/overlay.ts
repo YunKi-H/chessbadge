@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { ChatOverlayEvent } from "@chessbadge/core";
+import type { ChatOverlayEvent, OverlayAppearance } from "@chessbadge/core";
 import { z } from "zod";
 import { getRequiredFirebaseUser, requireFirebaseUser } from "../auth/firebase.js";
 import { getWebAppUrl } from "../config/web.js";
@@ -7,13 +7,16 @@ import {
   disableStreamerOverlayAccess,
   enableStreamerOverlayAccess,
   getStreamerOverlayAccess,
-  resolveActiveOverlayStreamer,
+  resolveActiveOverlayAccess,
   rotateStreamerOverlayAccess,
   StreamerOverlayAccessError,
+  updateStreamerOverlayAppearance,
   type StreamerOverlayAccess
 } from "../firebase/overlays.js";
 import {
+  publishOverlayAppearance,
   revokeOverlayConnections,
+  subscribeOverlayAppearance,
   subscribeOverlayRevocation
 } from "../realtime/overlay-access-events.js";
 import { subscribeStreamerChatOverlayEvents } from "../realtime/overlay-events.js";
@@ -24,6 +27,16 @@ const testEventsQuerySchema = z.object({
 
 const overlayParamsSchema = z.object({
   publicToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/)
+});
+
+const overlayAppearanceSchema = z.object({
+  backgroundVisible: z.boolean(),
+  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  backgroundOpacity: z.number().int().min(0).max(100),
+  nicknameVisible: z.boolean(),
+  nicknameColorMode: z.enum(["fixed", "by_user"]),
+  nicknameColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  messageColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/)
 });
 
 export async function registerOverlayRoutes(app: FastifyInstance) {
@@ -95,6 +108,34 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
     }
   );
 
+  app.patch(
+    "/api/overlay/appearance",
+    { preHandler: requireFirebaseUser },
+    async (request, reply) => {
+      const user = getRequiredFirebaseUser(request);
+      const parsedAppearance = overlayAppearanceSchema.safeParse(request.body);
+
+      if (!parsedAppearance.success) {
+        return reply.code(400).send({ error: "Invalid overlay appearance" });
+      }
+
+      const appearance: OverlayAppearance = {
+        ...parsedAppearance.data,
+        backgroundColor: parsedAppearance.data.backgroundColor.toUpperCase(),
+        nicknameColor: parsedAppearance.data.nicknameColor.toUpperCase(),
+        messageColor: parsedAppearance.data.messageColor.toUpperCase()
+      };
+
+      try {
+        const overlay = await updateStreamerOverlayAppearance(user.uid, appearance);
+        publishOverlayAppearance(overlay.publicToken, appearance);
+        return { ok: true, overlay: toOverlayResponse(overlay) };
+      } catch (error) {
+        return sendOverlayManagementError(error, reply);
+      }
+    }
+  );
+
   app.get("/events/test", async (request, reply) => {
     const query = testEventsQuerySchema.parse(request.query);
 
@@ -132,11 +173,13 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
     }
 
     const { publicToken } = parsedParams.data;
-    const streamerUid = await resolveActiveOverlayStreamer(publicToken);
+    const activeOverlay = await resolveActiveOverlayAccess(publicToken);
 
-    if (!streamerUid) {
+    if (!activeOverlay) {
       return reply.code(404).send({ error: "Overlay not found" });
     }
+
+    const { streamerUid } = activeOverlay;
 
     reply.hijack();
     reply.raw.writeHead(200, {
@@ -151,9 +194,21 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
       reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
     };
 
+    let currentAppearance = activeOverlay.appearance;
+    const sendAppearance = (appearance: OverlayAppearance) => {
+      currentAppearance = appearance;
+      reply.raw.write("event: appearance\n");
+      reply.raw.write(`data: ${JSON.stringify(appearance)}\n\n`);
+    };
+
     let closed = false;
     let validating = false;
+    sendAppearance(currentAppearance);
     const unsubscribeChat = subscribeStreamerChatOverlayEvents(streamerUid, send);
+    const unsubscribeAppearance = subscribeOverlayAppearance(
+      publicToken,
+      sendAppearance
+    );
     const unsubscribeRevocation = subscribeOverlayRevocation(publicToken, () => {
       if (!closed) {
         reply.raw.write("event: revoked\ndata: {}\n\n");
@@ -171,10 +226,20 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
 
       if (!validating) {
         validating = true;
-        void resolveActiveOverlayStreamer(publicToken)
-          .then((activeStreamerUid) => {
-            if (activeStreamerUid !== streamerUid && !closed) {
+        void resolveActiveOverlayAccess(publicToken)
+          .then((refreshedOverlay) => {
+            if (refreshedOverlay?.streamerUid !== streamerUid && !closed) {
               reply.raw.end();
+              return;
+            }
+
+            if (
+              refreshedOverlay &&
+              appearanceKey(refreshedOverlay.appearance) !==
+                appearanceKey(currentAppearance) &&
+              !closed
+            ) {
+              sendAppearance(refreshedOverlay.appearance);
             }
           })
           .catch((error: unknown) => {
@@ -193,6 +258,7 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
 
       closed = true;
       unsubscribeChat();
+      unsubscribeAppearance();
       unsubscribeRevocation();
       clearInterval(heartbeat);
     };
@@ -206,8 +272,13 @@ function toOverlayResponse(overlay: StreamerOverlayAccess) {
   return {
     publicToken: overlay.publicToken,
     active: overlay.active,
+    appearance: overlay.appearance,
     url: new URL(`/overlay/${overlay.publicToken}`, getWebAppUrl()).toString()
   };
+}
+
+function appearanceKey(appearance: OverlayAppearance): string {
+  return JSON.stringify(appearance);
 }
 
 function sendOverlayManagementError(error: unknown, reply: import("fastify").FastifyReply) {

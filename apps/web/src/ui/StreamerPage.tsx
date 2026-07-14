@@ -1,8 +1,17 @@
+import { useState } from "react";
+import {
+  DEFAULT_OVERLAY_APPEARANCE,
+  type OverlayAppearance
+} from "@chessbadge/core";
 import { Radio } from "lucide-react";
 import { OverlayPreview } from "./OverlayPreview";
 import { OverlaySettings } from "./OverlaySettings";
 
 export function StreamerPage() {
+  const [appearance, setAppearance] = useState<OverlayAppearance>({
+    ...DEFAULT_OVERLAY_APPEARANCE
+  });
+
   return (
     <div>
       <header className="mb-8">
@@ -13,11 +22,11 @@ export function StreamerPage() {
         <h1 className="mt-2 text-2xl font-semibold text-white">방송 오버레이</h1>
       </header>
 
-      <OverlaySettings />
+      <OverlaySettings onAppearanceChange={setAppearance} />
 
       <section className="max-w-2xl py-2">
         <h2 className="mb-4 text-lg font-semibold text-white">채팅 미리보기</h2>
-        <OverlayPreview />
+        <OverlayPreview appearance={appearance} />
       </section>
     </div>
   );

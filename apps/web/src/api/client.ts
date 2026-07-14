@@ -1,3 +1,4 @@
+import type { OverlayAppearance } from "@chessbadge/core";
 import { getFirebaseClientAuth } from "../firebase/client";
 
 export async function authenticatedFetch(
@@ -31,6 +32,7 @@ export interface OverlayAccess {
   publicToken: string;
   active: boolean;
   url: string;
+  appearance: OverlayAppearance;
 }
 
 export interface ChessComAccount {
@@ -176,6 +178,23 @@ export async function disableOverlayAccess(): Promise<OverlayAccess | null> {
   return body.overlay;
 }
 
+export async function updateOverlayAppearance(
+  appearance: OverlayAppearance
+): Promise<OverlayAccess> {
+  const response = await authenticatedFetch("/api/overlay/appearance", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(appearance)
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok || !isOverlayResponse(body) || !body.overlay) {
+    throw new Error(apiError(body, "오버레이 화면 설정을 저장하지 못했습니다."));
+  }
+
+  return body.overlay;
+}
+
 async function updateOverlayAccess(path: string): Promise<OverlayAccess> {
   const response = await authenticatedFetch(path, { method: "POST" });
   const body: unknown = await response.json().catch(() => null);
@@ -229,7 +248,33 @@ function isOverlayResponse(
   return (
     typeof response.overlay.publicToken === "string" &&
     typeof response.overlay.active === "boolean" &&
-    typeof response.overlay.url === "string"
+    typeof response.overlay.url === "string" &&
+    isOverlayAppearance(response.overlay.appearance)
+  );
+}
+
+function isOverlayAppearance(value: unknown): value is OverlayAppearance {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const appearance = value as Partial<OverlayAppearance>;
+
+  return (
+    typeof appearance.backgroundVisible === "boolean" &&
+    typeof appearance.backgroundColor === "string" &&
+    /^#[0-9A-Fa-f]{6}$/.test(appearance.backgroundColor) &&
+    typeof appearance.backgroundOpacity === "number" &&
+    Number.isInteger(appearance.backgroundOpacity) &&
+    appearance.backgroundOpacity >= 0 &&
+    appearance.backgroundOpacity <= 100 &&
+    typeof appearance.nicknameVisible === "boolean" &&
+    (appearance.nicknameColorMode === "fixed" ||
+      appearance.nicknameColorMode === "by_user") &&
+    typeof appearance.nicknameColor === "string" &&
+    /^#[0-9A-Fa-f]{6}$/.test(appearance.nicknameColor) &&
+    typeof appearance.messageColor === "string" &&
+    /^#[0-9A-Fa-f]{6}$/.test(appearance.messageColor)
   );
 }
 
