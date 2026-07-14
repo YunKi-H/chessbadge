@@ -45,11 +45,11 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
 
   return (
     <main className="flex min-h-screen items-end bg-transparent p-6" aria-live="polite">
-      <div className="w-full max-w-2xl space-y-2">
+      <div className="w-full max-w-[600px] space-y-2">
         {messages.map((message) => (
           <div
             key={message.id}
-            className="overlay-message flex w-fit max-w-full items-center gap-2 rounded-md bg-slate-950/90 px-3 py-2 text-lg shadow-lg ring-1 ring-white/15"
+            className="overlay-message flex w-fit max-w-full items-start gap-2 rounded-md bg-slate-950/90 px-3 py-2 text-lg shadow-lg ring-1 ring-white/15"
           >
             {message.rating ? (
               <RatingBadge rating={message.rating} />

@@ -26,7 +26,7 @@ export function OverlayPreview() {
         if (!message) {
           return;
         }
-        setMessages((current) => [message, ...current].slice(0, 5));
+        setMessages((current) => [...current, message].slice(-8));
       });
     });
 
@@ -68,15 +68,41 @@ export function OverlayPreview() {
       sentAt: new Date().toISOString()
     };
 
-    setMessages((current) => [message, ...current].slice(0, 5));
+    setMessages((current) => [...current, message].slice(-8));
     setContent("");
   };
 
   return (
-    <section className="max-w-2xl">
+    <section className="max-w-[600px]">
+      <div className="flex aspect-video w-full flex-col justify-end overflow-hidden rounded-md bg-slate-950/60 p-4 ring-1 ring-white/10">
+        {messages.length === 0 ? (
+          <div className="border-l-2 border-slate-700 py-2 pl-4 text-sm text-slate-400">
+            아직 표시할 메시지가 없습니다
+          </div>
+        ) : null}
+        <div className="w-full space-y-2">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className="flex w-fit max-w-full min-w-0 items-start gap-2 rounded-md bg-slate-900/90 px-3 py-2 shadow-lg ring-1 ring-white/10"
+            >
+              {message.rating ? (
+                <RatingBadge rating={message.rating} />
+              ) : null}
+              <span className="max-w-40 shrink-0 truncate font-semibold text-sky-200">
+                {message.nickname}:
+              </span>
+              <span className="min-w-0 break-words text-slate-100">
+                {message.content}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <form
         onSubmit={addPreviewMessage}
-        className="mb-6 grid gap-3 border-b border-white/10 pb-6 sm:grid-cols-[minmax(0,1fr)_8rem]"
+        className="mt-6 grid gap-3 border-t border-white/10 pt-6 sm:grid-cols-[minmax(0,1fr)_8rem]"
       >
         <label className="grid gap-1.5 text-sm font-medium text-slate-300">
           닉네임
@@ -124,30 +150,6 @@ export function OverlayPreview() {
           </span>
         </label>
       </form>
-
-      {messages.length === 0 ? (
-        <div className="border-l-2 border-slate-700 py-2 pl-4 text-sm text-slate-400">
-          아직 표시할 메시지가 없습니다
-        </div>
-      ) : null}
-      <div className="space-y-3">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className="flex min-w-0 items-center gap-2 rounded-md bg-slate-900/80 px-3 py-2 shadow-lg ring-1 ring-white/10"
-          >
-            {message.rating ? (
-              <RatingBadge rating={message.rating} />
-            ) : null}
-            <span className="max-w-40 shrink-0 truncate font-semibold text-sky-200">
-              {message.nickname}:
-            </span>
-            <span className="min-w-0 break-words text-slate-100">
-              {message.content}
-            </span>
-          </div>
-        ))}
-      </div>
     </section>
   );
 }
