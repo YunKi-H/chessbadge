@@ -14,7 +14,7 @@
     "test": "pnpm -r test",
     "test:emulator": "firebase emulators:exec --only firestore --project demo-chessbadge-emulator \"pnpm --filter @chessbadge/server test:emulator:run\"",
     "typecheck": "pnpm --filter @chessbadge/core build && pnpm -r typecheck",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm --filter @chessbadge/core build && pnpm -r lint"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
