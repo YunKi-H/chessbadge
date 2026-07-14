@@ -26,19 +26,6 @@ const overlayParamsSchema = z.object({
   publicToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/)
 });
 
-const sampleEvent: ChatOverlayEvent = {
-  id: "sample-1",
-  nickname: "yunki",
-  content: "좋은 수네요",
-  rating: {
-    provider: "lichess",
-    speed: "blitz",
-    value: 1520,
-    provisional: false
-  },
-  sentAt: new Date().toISOString()
-};
-
 export async function registerOverlayRoutes(app: FastifyInstance) {
   app.get(
     "/api/overlay",
@@ -108,10 +95,6 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
     }
   );
 
-  app.get("/api/overlay/test/messages", async () => ({
-    messages: [sampleEvent]
-  }));
-
   app.get("/events/test", async (request, reply) => {
     const query = testEventsQuerySchema.parse(request.query);
 
@@ -125,8 +108,6 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
       reply.raw.write(`event: chat\n`);
       reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
     };
-
-    send(sampleEvent);
 
     const unsubscribe = query.streamerUid
       ? subscribeStreamerChatOverlayEvents(query.streamerUid, send)
