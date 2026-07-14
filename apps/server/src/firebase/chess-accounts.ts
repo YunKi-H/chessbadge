@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { ChessComPlayer, ChessComRating } from "../chess/chesscom/client.js";
 import { getFirestoreDb } from "./admin.js";
+import { getHighestChessComRating } from "../chess/rating-selection.js";
 
 export interface StoredChessComAccount {
   username: string;
@@ -10,6 +11,7 @@ export interface StoredChessComAccount {
   avatarUrl: string | null;
   status: string;
   verified: boolean;
+  selectedSpeed: ChessComRating["speed"] | null;
   ratings: ChessComRating[];
 }
 
@@ -28,8 +30,9 @@ export async function saveUnverifiedChessComAccount(
   const accountId = toChessComAccountId(player.normalizedUsername);
   const accountRef = db.collection("chessAccounts").doc(accountId);
   const userRef = db.collection("users").doc(uid);
+  const chzzkChannelId = uid.startsWith("chzzk:") ? uid.slice(6) : null;
 
-  const verified = await db.runTransaction(async (transaction) => {
+  const savedState = await db.runTransaction(async (transaction) => {
     const [accountSnapshot, userSnapshot] = await Promise.all([
       transaction.get(accountRef),
       transaction.get(userRef)
@@ -42,6 +45,13 @@ export async function saveUnverifiedChessComAccount(
 
     const previousAccountId = userSnapshot.data()?.chessAccountIds?.chesscom;
     const preserveVerification = accountSnapshot.exists && linkedUid === uid;
+    const existingAccount = accountSnapshot.data();
+    const verified =
+      preserveVerification && existingAccount?.verifiedAt instanceof Timestamp;
+    const selectedRating = verified
+      ? getHighestChessComRating(player.ratings) ?? undefined
+      : undefined;
+    const selectedSpeed = selectedRating?.speed ?? null;
     const now = FieldValue.serverTimestamp();
 
     if (typeof previousAccountId === "string" && previousAccountId !== accountId) {
@@ -68,9 +78,13 @@ export async function saveUnverifiedChessComAccount(
         profileUrl: player.profileUrl,
         avatarUrl: player.avatarUrl,
         accountStatus: player.status,
+        selectedSpeed,
         ...(preserveVerification
           ? {}
-          : { verifiedAt: null, verificationMethod: null }),
+          : {
+              verifiedAt: null,
+              verificationMethod: null
+            }),
         disconnectedAt: null,
         ...(accountSnapshot.exists ? {} : { createdAt: now }),
         updatedAt: now,
@@ -86,7 +100,27 @@ export async function saveUnverifiedChessComAccount(
       },
       { merge: true }
     );
-    return preserveVerification && accountSnapshot.data()?.verifiedAt instanceof Timestamp;
+    if (chzzkChannelId) {
+      transaction.set(
+        db.collection("chzzkAccounts").doc(chzzkChannelId),
+        {
+          badge: selectedRating
+            ? {
+                provider: "chesscom",
+                speed: selectedRating.speed,
+                value: selectedRating.value,
+                provisional: false
+              }
+            : null,
+          updatedAt: now
+        },
+        { merge: true }
+      );
+    }
+    return {
+      verified,
+      selectedSpeed
+    };
   });
 
   const batch = db.batch();
@@ -106,7 +140,11 @@ export async function saveUnverifiedChessComAccount(
   }
 
   await batch.commit();
-  return { ...player, verified };
+  return {
+    ...player,
+    verified: savedState.verified,
+    selectedSpeed: savedState.selectedSpeed
+  };
 }
 
 export async function getUserChessComAccount(
@@ -160,6 +198,7 @@ export async function getUserChessComAccount(
     avatarUrl: typeof data.avatarUrl === "string" ? data.avatarUrl : null,
     status: String(data.accountStatus),
     verified: data.verifiedAt instanceof Timestamp,
+    selectedSpeed: isChessComSpeed(data.selectedSpeed) ? data.selectedSpeed : null,
     ratings
   };
 }

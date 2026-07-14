@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreDb } from "./admin.js";
+import { getHighestChessComRating } from "../chess/rating-selection.js";
 
 const CHALLENGE_LIFETIME_MS = 48 * 60 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 10;
@@ -163,12 +164,52 @@ export async function completeChessComLocationVerification(
       return "location_mismatch" as const;
     }
 
+    const ratingRefs = (["bullet", "blitz", "rapid"] as const).map((speed) =>
+      accountRef.collection("ratings").doc(speed)
+    );
+    const ratingSnapshots = await Promise.all(
+      ratingRefs.map((ratingRef) => transaction.get(ratingRef))
+    );
+    const highestRating = getHighestChessComRating(
+      ratingSnapshots.flatMap((snapshot) => {
+        const rating = snapshot.data();
+        const speed = snapshot.id;
+
+        return (
+          (speed === "bullet" || speed === "blitz" || speed === "rapid") &&
+          typeof rating?.value === "number"
+        )
+          ? [{ speed, value: rating.value }]
+          : [];
+      })
+    );
+
     const now = FieldValue.serverTimestamp();
     transaction.update(accountRef, {
       verifiedAt: now,
       verificationMethod: "profile_location",
+      selectedSpeed: highestRating?.speed ?? null,
       updatedAt: now
     });
+    const chzzkChannelId = uid.startsWith("chzzk:") ? uid.slice(6) : null;
+
+    if (chzzkChannelId) {
+      transaction.set(
+        db.collection("chzzkAccounts").doc(chzzkChannelId),
+        {
+          badge: highestRating
+            ? {
+                provider: "chesscom",
+                speed: highestRating.speed,
+                value: highestRating.value,
+                provisional: false
+              }
+            : null,
+          updatedAt: now
+        },
+        { merge: true }
+      );
+    }
     transaction.delete(challengeRef);
     return "verified" as const;
   });

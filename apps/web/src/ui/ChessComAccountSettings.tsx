@@ -292,6 +292,12 @@ export function ChessComAccountSettings() {
               <div key={rating.speed} className="bg-slate-900 px-4 py-4">
                 <dt className="text-sm text-slate-400">{speedLabels[rating.speed]}</dt>
                 <dd className="mt-1 text-2xl font-semibold text-white">{rating.value}</dd>
+                {account.verified && account.selectedSpeed === rating.speed ? (
+                  <span className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-md bg-emerald-400 px-3 text-sm font-semibold text-slate-950">
+                    <CheckCircle2 size={15} />
+                    최고 레이팅 적용 중
+                  </span>
+                ) : null}
               </div>
             )) : (
               <div className="bg-slate-900 px-4 py-4 text-sm text-slate-400 sm:col-span-3">

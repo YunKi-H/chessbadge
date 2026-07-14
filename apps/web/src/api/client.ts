@@ -39,6 +39,7 @@ export interface ChessComAccount {
   profileUrl: string;
   avatarUrl: string | null;
   verified: boolean;
+  selectedSpeed: "bullet" | "blitz" | "rapid" | null;
   ratings: Array<{
     speed: "bullet" | "blitz" | "rapid";
     value: number;
@@ -230,6 +231,10 @@ function isChessComAccountResponse(
     typeof response.account.username === "string" &&
     typeof response.account.profileUrl === "string" &&
     typeof response.account.verified === "boolean" &&
+    (response.account.selectedSpeed === null ||
+      response.account.selectedSpeed === "bullet" ||
+      response.account.selectedSpeed === "blitz" ||
+      response.account.selectedSpeed === "rapid") &&
     Array.isArray(response.account.ratings)
   );
 }

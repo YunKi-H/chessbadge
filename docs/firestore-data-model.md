@@ -139,6 +139,7 @@ infrastructure access logs must redact the token path segment.
   providerUserId: string | null;
   verifiedAt: Timestamp | null;
   verificationMethod: string | null;
+  selectedSpeed: "bullet" | "blitz" | "rapid" | null;
   profileUrl: string;
   avatarUrl: string | null;
   accountStatus: string;
@@ -152,6 +153,12 @@ infrastructure access logs must redact the token path segment.
 Ratings live under `chessAccounts/{accountId}/ratings/{speed}`. Updating the
 user's selected rating must also update `chzzkAccounts/{chzzkChannelId}.badge`
 in the same transaction or batch.
+
+Only a verified account can set `selectedSpeed`. Verification automatically
+chooses the numerically highest Bullet, Blitz, or Rapid rating and copies it to
+the denormalized Chzzk badge. Ties prefer Rapid, then Blitz, then Bullet.
+Refreshing the same Chess.com account recalculates and refreshes the badge;
+changing accounts or losing all supported ratings clears it.
 
 For Chess.com, the first registration uses the read-only PubAPI and therefore
 always writes `verifiedAt: null`. A public username and public rating are not
@@ -213,3 +220,7 @@ Chzzk CHAT event
 
 Do not store every Chzzk chat message in Firestore. Chat is transient overlay
 traffic; Firestore stores identities, configuration, verification, and ratings.
+The server caches `senderChannelId -> badge` lookups for 60 seconds, coalesces
+concurrent misses for the same sender, and invalidates the local entry after a
+badge selection or account refresh. Firestore failures must not drop chat; the
+message is published without a rating badge instead.

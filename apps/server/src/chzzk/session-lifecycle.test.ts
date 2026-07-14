@@ -8,6 +8,7 @@ import {
   type ChzzkSocket
 } from "./session.js";
 import type { ChzzkSessionPolicy } from "./session-watchdog.js";
+import { subscribeStreamerChatOverlayEvents } from "../realtime/overlay-events.js";
 
 const config: ChzzkAuthConfig = {
   clientId: "client-id",
@@ -101,6 +102,36 @@ test("missing sessionKey before the deadline creates a fresh session", async () 
   session.stop();
 });
 
+test("published chat includes the sender's cached rating badge", async () => {
+  const sockets: FakeSocket[] = [];
+  const deps = dependencies(sockets, () => {});
+  deps.getRatingBadge = async (channelId) => ({
+    provider: "chesscom",
+    speed: "rapid",
+    value: channelId === "viewer-channel" ? 1520 : 0,
+    provisional: false
+  });
+  const session = new ChzzkSession("streamer-a", policy, deps);
+  const events: Array<{ rating: { value: number } | null }> = [];
+  const unsubscribe = subscribeStreamerChatOverlayEvents("streamer-a", (event) => {
+    events.push(event);
+  });
+
+  await session.start(config, "access-token", logger);
+  sockets[0]?.emit("CHAT", {
+    channelId: "streamer-channel",
+    senderChannelId: "viewer-channel",
+    profile: { nickname: "viewer" },
+    content: "good move",
+    messageTime: 1_783_000_000_000
+  });
+  await waitFor(() => events.length === 1);
+
+  assert.equal(events[0]?.rating?.value, 1520);
+  unsubscribe();
+  session.stop();
+});
+
 function dependencies(
   sockets: FakeSocket[],
   onSessionRequest: () => void
@@ -117,6 +148,7 @@ function dependencies(
       sockets.push(socket);
       return socket;
     },
+    getRatingBadge: async () => null,
     random: () => 0.5
   };
 }

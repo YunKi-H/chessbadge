@@ -1,7 +1,7 @@
 import socketIoClient from "socket.io-client";
 import { z } from "zod";
 import type { FastifyBaseLogger } from "fastify";
-import type { ChatOverlayEvent } from "@chessbadge/core";
+import type { ChatOverlayEvent, RatingBadge } from "@chessbadge/core";
 import type { ChzzkAuthConfig } from "../auth/chzzk/client.js";
 import {
   createChzzkUserSession,
@@ -10,6 +10,7 @@ import {
 } from "../auth/chzzk/client.js";
 import { markChzzkStreamerReauthenticationRequired } from "../firebase/chzzk-tokens.js";
 import { publishChatOverlayEvent } from "../realtime/overlay-events.js";
+import { ratingBadgeCache } from "../chess/badge-cache.js";
 import {
   defaultChzzkSessionPolicy,
   getChzzkReconnectDelay,
@@ -30,6 +31,7 @@ export interface ChzzkSessionDependencies {
   getUserSessions: typeof getChzzkUserSessions;
   subscribeChat: typeof subscribeChzzkChatEvent;
   createSocket(url: string): ChzzkSocket;
+  getRatingBadge(senderChannelId: string): Promise<RatingBadge | null>;
   random(): number;
 }
 
@@ -44,6 +46,7 @@ const defaultSessionDependencies: ChzzkSessionDependencies = {
       forceNew: true,
       timeout: 3000
     }),
+  getRatingBadge: (senderChannelId) => ratingBadgeCache.get(senderChannelId),
   random: Math.random
 };
 
@@ -388,7 +391,27 @@ export class ChzzkSession implements ManagedChzzkSession {
       "Chzzk chat message received"
     );
 
-    publishChatOverlayEvent(this.ownerUid, toChatOverlayEvent(parsed.data));
+    void this.publishChatMessage(parsed.data, generation);
+  }
+
+  private async publishChatMessage(
+    message: z.infer<typeof chatMessageSchema>,
+    generation: number
+  ): Promise<void> {
+    let rating: RatingBadge | null = null;
+
+    try {
+      rating = await this.dependencies.getRatingBadge(message.senderChannelId);
+    } catch (error) {
+      this.logger?.warn(
+        { err: error, senderChannelId: message.senderChannelId },
+        "Chess rating badge lookup failed"
+      );
+    }
+
+    if (this.isCurrent(generation)) {
+      publishChatOverlayEvent(this.ownerUid, toChatOverlayEvent(message, rating));
+    }
   }
 
   private markSubscribed(generation: number): void {
@@ -684,12 +707,15 @@ function normalizeSocketPayload(payload: unknown): unknown {
   }
 }
 
-function toChatOverlayEvent(message: z.infer<typeof chatMessageSchema>): ChatOverlayEvent {
+function toChatOverlayEvent(
+  message: z.infer<typeof chatMessageSchema>,
+  rating: RatingBadge | null
+): ChatOverlayEvent {
   return {
     id: `chzzk:${message.channelId}:${message.senderChannelId}:${message.messageTime}`,
     nickname: message.profile.nickname,
     content: message.content,
-    rating: null,
+    rating,
     sentAt: new Date(message.messageTime).toISOString(),
     source: {
       provider: "chzzk",

@@ -26,6 +26,8 @@ import {
   type ChessComVerificationChallenge,
   type PendingChessComVerification
 } from "../../firebase/chess-verifications.js";
+import { ratingBadgeCache } from "../badge-cache.js";
+import { ensureHighestChessComBadge } from "../../firebase/chess-badges.js";
 
 const linkBodySchema = z.object({
   username: z
@@ -50,6 +52,8 @@ export interface ChessComRouteDependencies {
     playerId: string,
     location: string | null
   ): Promise<void>;
+  ensureHighestBadge(uid: string, chzzkChannelId: string): Promise<boolean>;
+  invalidateBadge(channelId: string): void;
 }
 
 export async function registerChessComRoutes(
@@ -60,9 +64,20 @@ export async function registerChessComRoutes(
     "/api/chess/chesscom/account",
     { preHandler: dependencies.authenticate },
     async (request) => {
-      const account = await dependencies.getAccount(
-        getRequiredFirebaseUser(request).uid
-      );
+      const user = getRequiredFirebaseUser(request);
+      let account = await dependencies.getAccount(user.uid);
+
+      if (account?.verified && !account.selectedSpeed && user.chzzkChannelId) {
+        const updated = await dependencies.ensureHighestBadge(
+          user.uid,
+          user.chzzkChannelId
+        );
+
+        if (updated) {
+          dependencies.invalidateBadge(user.chzzkChannelId);
+          account = await dependencies.getAccount(user.uid);
+        }
+      }
 
       return { ok: true, account: account ? toResponse(account) : null };
     }
@@ -86,6 +101,11 @@ export async function registerChessComRoutes(
           getRequiredFirebaseUser(request).uid,
           player
         );
+        const channelId = getRequiredFirebaseUser(request).chzzkChannelId;
+
+        if (channelId) {
+          dependencies.invalidateBadge(channelId);
+        }
 
         return reply.code(201).send({ ok: true, account: toResponse(account) });
       } catch (error) {
@@ -121,6 +141,7 @@ export async function registerChessComRoutes(
     { preHandler: dependencies.authenticate },
     async (request, reply) => {
       const uid = getRequiredFirebaseUser(request).uid;
+      const channelId = getRequiredFirebaseUser(request).chzzkChannelId;
 
       try {
         const pending = await dependencies.getPendingVerification(uid);
@@ -131,6 +152,9 @@ export async function registerChessComRoutes(
           profile.playerId,
           profile.location
         );
+        if (channelId) {
+          dependencies.invalidateBadge(channelId);
+        }
         const account = await dependencies.getAccount(uid);
 
         if (!account) {
@@ -157,7 +181,9 @@ function defaultDependencies(): ChessComRouteDependencies {
     saveAccount: saveUnverifiedChessComAccount,
     createVerification: createChessComLocationChallenge,
     getPendingVerification: getPendingChessComLocationChallenge,
-    completeVerification: completeChessComLocationVerification
+    completeVerification: completeChessComLocationVerification,
+    ensureHighestBadge: ensureHighestChessComBadge,
+    invalidateBadge: (channelId) => ratingBadgeCache.invalidate(channelId)
   };
 }
 
@@ -168,6 +194,7 @@ function toResponse(account: StoredChessComAccount) {
     profileUrl: account.profileUrl,
     avatarUrl: account.avatarUrl,
     verified: account.verified,
+    selectedSpeed: account.selectedSpeed,
     ratings: account.ratings
       .map((rating) => ({
         speed: rating.speed,

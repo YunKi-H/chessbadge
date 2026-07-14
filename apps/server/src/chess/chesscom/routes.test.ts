@@ -34,6 +34,35 @@ test("Chess.com account routes require Firebase authentication", async () => {
   await app.close();
 });
 
+test("backfills the highest badge for an already verified account", async () => {
+  let reads = 0;
+  let ensured = false;
+  const app = await createApp({
+    getAccount: async () => {
+      reads += 1;
+      return {
+        ...player,
+        verified: true,
+        selectedSpeed: reads === 1 ? null : "rapid"
+      };
+    },
+    ensureHighestBadge: async () => {
+      ensured = true;
+      return true;
+    }
+  });
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/chess/chesscom/account",
+    headers: { authorization: "Bearer valid-token" }
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(ensured, true);
+  assert.equal(response.json().account.selectedSpeed, "rapid");
+  await app.close();
+});
+
 test("creates a Chess.com location verification challenge", async () => {
   const app = await createApp({
     createVerification: async () => ({
@@ -67,7 +96,7 @@ test("confirms ownership from the Chess.com location field", async () => {
     completeVerification: async (_uid, _accountId, _playerId, location) => {
       completedLocation = location;
     },
-    getAccount: async () => ({ ...player, verified: true })
+    getAccount: async () => ({ ...player, verified: true, selectedSpeed: null })
   });
   const response = await app.inject({
     method: "POST",
@@ -87,7 +116,7 @@ test("links a fetched Chess.com account as unverified", async () => {
     getPlayer: async () => player,
     saveAccount: async (uid, fetchedPlayer) => {
       savedUid = uid;
-      return { ...fetchedPlayer, verified: false };
+      return { ...fetchedPlayer, verified: false, selectedSpeed: null };
     }
   });
   const response = await app.inject({
@@ -136,7 +165,8 @@ async function createApp(overrides: Partial<ChessComRouteDependencies> = {}) {
     getAccount: async () => null,
     saveAccount: async (_uid, fetchedPlayer) => ({
       ...fetchedPlayer,
-      verified: false
+      verified: false,
+      selectedSpeed: null
     }),
     createVerification: async () => ({
       code: "chessbadge-test-code",
@@ -148,6 +178,8 @@ async function createApp(overrides: Partial<ChessComRouteDependencies> = {}) {
       playerId: "42"
     }),
     completeVerification: async () => undefined,
+    ensureHighestBadge: async () => false,
+    invalidateBadge: () => undefined,
     ...overrides
   });
   return app;

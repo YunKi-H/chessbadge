@@ -110,6 +110,8 @@ GET  /api/chzzk/session/status
 POST /api/chzzk/session/stop
 GET  /api/chess/chesscom/account
 POST /api/chess/chesscom/account
+POST /api/chess/chesscom/verification
+POST /api/chess/chesscom/verification/confirm
 ```
 
 The Chzzk session manager also records the owning Firebase UID, so an authenticated
@@ -135,6 +137,14 @@ challenge invalidates the previous code, and ten failed checks exhaust a
 challenge. Chess.com PubAPI caching means a correct profile edit may not be
 visible immediately. Approved Chess.com OAuth remains the preferred long-term
 replacement for this flow.
+
+After verification, the server automatically chooses the numerically highest
+available Bullet, Blitz, or Rapid rating and writes a denormalized badge to the
+viewer’s Chzzk account. Ties prefer Rapid, then Blitz, then Bullet. Refreshing
+Chess.com data recalculates the highest rating. Incoming chat resolves the
+badge by `senderChannelId` through a 60-second in-memory cache and includes it in
+the existing SSE overlay event. A badge lookup failure degrades to a normal chat
+message without dropping chat delivery.
 
 ## First Milestone
 
