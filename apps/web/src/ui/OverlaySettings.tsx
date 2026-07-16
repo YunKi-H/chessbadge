@@ -6,6 +6,8 @@ import {
 import {
   ChevronDown,
   Copy,
+  Eye,
+  EyeOff,
   Link,
   Palette,
   Power,
@@ -66,6 +68,7 @@ export function OverlaySettings({
   const [state, setState] = useState<SettingsState>({ status: "loading" });
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [urlVisible, setUrlVisible] = useState(false);
   const [appearanceDirty, setAppearanceDirty] = useState(false);
   const [appearanceExpanded, setAppearanceExpanded] = useState(
     readAppearanceExpanded
@@ -73,6 +76,8 @@ export function OverlaySettings({
 
   useEffect(() => {
     return onAuthStateChanged(getFirebaseClientAuth(), (user) => {
+      setUrlVisible(false);
+
       if (!user) {
         setState({ status: "signed_out" });
         return;
@@ -95,6 +100,7 @@ export function OverlaySettings({
   const runUpdate = async (operation: () => Promise<OverlayAccess | null>) => {
     setUpdating(true);
     setCopied(false);
+    setUrlVisible(false);
 
     try {
       const overlay = await operation();
@@ -187,9 +193,23 @@ export function OverlaySettings({
             <input
               aria-label="OBS Browser Source URL"
               readOnly
-              value={overlay.url}
+              value={urlVisible ? overlay.url : "********************"}
               className="min-w-0 flex-1 rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none"
             />
+            <button
+              type="button"
+              title={urlVisible ? "URL 숨기기" : "URL 표시"}
+              aria-label={urlVisible ? "URL 숨기기" : "URL 표시"}
+              aria-pressed={urlVisible}
+              onClick={() => setUrlVisible((current) => !current)}
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-slate-800 text-white hover:bg-slate-700"
+            >
+              {urlVisible ? (
+                <EyeOff aria-hidden="true" size={18} />
+              ) : (
+                <Eye aria-hidden="true" size={18} />
+              )}
+            </button>
             <button
               type="button"
               title="URL 복사"
