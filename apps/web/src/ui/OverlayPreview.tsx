@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import type { ChatOverlayEvent, OverlayAppearance } from "@chessbadge/core";
+import type { ChatOverlayEvent, OverlayAppearance } from "@elobadge/core";
 import { onAuthStateChanged } from "firebase/auth";
 import { Send } from "lucide-react";
 import { getFirebaseClientAuth } from "../firebase/client";

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { ChatOverlayEvent } from "@chessbadge/core";
+import type { ChatOverlayEvent } from "@elobadge/core";
 import {
   publishChatOverlayEvent,
   subscribeStreamerChatOverlayEvents

@@ -1,4 +1,4 @@
-import type { ChatOverlayEvent, OverlayAppearance } from "@chessbadge/core";
+import type { ChatOverlayEvent, OverlayAppearance } from "@elobadge/core";
 
 const USER_NICKNAME_COLORS = [
   "#7DD3FC",

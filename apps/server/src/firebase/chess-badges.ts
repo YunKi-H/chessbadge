@@ -1,4 +1,4 @@
-import type { ChessSpeed, RatingBadge } from "@chessbadge/core";
+import type { ChessSpeed, RatingBadge } from "@elobadge/core";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreDb } from "./admin.js";
 import { getHighestChessComRating } from "../chess/rating-selection.js";

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { signInWithCustomToken } from "firebase/auth";
 import { getFirebaseClientAuth } from "../firebase/client";
 import { getCurrentApiUser } from "../api/client";
-import type { ChzzkLoginMode } from "@chessbadge/core";
+import type { ChzzkLoginMode } from "@elobadge/core";
 import { Link, useNavigate } from "react-router-dom";
 
 type LoginState =

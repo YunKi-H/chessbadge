@@ -1,6 +1,6 @@
-# ChessBadge
+# EloBadge
 
-ChessBadge is a Chzzk-first chess rating chat overlay for streamers.
+EloBadge is a Chzzk-first chess rating chat overlay for streamers.
 
 ## Stack
 
@@ -222,7 +222,7 @@ first deployment, update, rollback, and OAuth configuration procedure.
 ## Firestore Emulator Tests
 
 Java 21 or newer is required. The integration suite starts an isolated Firestore
-Emulator with the non-production project ID `demo-chessbadge-emulator`, loads
+Emulator with the non-production project ID `demo-elobadge-emulator`, loads
 `firestore.rules`, runs the tests, and stops the emulator automatically:
 
 ```sh

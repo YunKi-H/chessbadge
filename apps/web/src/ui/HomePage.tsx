@@ -5,7 +5,7 @@ export function HomePage() {
   return (
     <div>
       <header className="max-w-2xl border-b border-white/10 pb-8">
-        <h1 className="text-3xl font-semibold text-white">ChessBadge</h1>
+        <h1 className="text-3xl font-semibold text-white">EloBadge</h1>
         <p className="mt-3 text-base leading-7 text-slate-300">
           치지직 채팅에 시청자의 Chess.com 레이팅을 표시합니다.
         </p>

@@ -1,5 +1,5 @@
 {
-  "name": "@chessbadge/core",
+  "name": "@elobadge/core",
   "private": true,
   "type": "module",
   "main": "dist/index.js",

@@ -1,6 +1,6 @@
 # Lightsail Deployment
 
-This deployment runs one ChessBadge application container behind Caddy on a
+This deployment runs one EloBadge application container behind Caddy on a
 Lightsail Linux instance. Keep exactly one application container until the
 in-memory OAuth exchange and realtime event state move to shared infrastructure.
 
@@ -25,8 +25,8 @@ or Chzzk secrets as Docker build arguments.
 Push to `main` or manually run the **Build container** workflow. It publishes:
 
 ```text
-ghcr.io/yunki-h/chessbadge:latest
-ghcr.io/yunki-h/chessbadge:sha-<commit>
+ghcr.io/yunki-h/elobadge:latest
+ghcr.io/yunki-h/elobadge:sha-<commit>
 ```
 
 Make the GHCR package public. If it must remain private, authenticate Docker on
@@ -61,10 +61,10 @@ Log out and reconnect once so the Docker group membership takes effect.
 Clone the repository and create the runtime environment file:
 
 ```sh
-sudo mkdir -p /opt/chessbadge
-sudo chown "$USER":"$USER" /opt/chessbadge
-git clone https://github.com/YunKi-H/chessbadge.git /opt/chessbadge/repository
-cd /opt/chessbadge/repository/deploy
+sudo mkdir -p /opt/elobadge
+sudo chown "$USER":"$USER" /opt/elobadge
+git clone https://github.com/YunKi-H/elobadge.git /opt/elobadge/repository
+cd /opt/elobadge/repository/deploy
 cp .env.example .env
 chmod 600 .env
 ```
@@ -117,7 +117,7 @@ Verify these flows after deployment:
 After the GitHub workflow succeeds:
 
 ```sh
-cd /opt/chessbadge/repository
+cd /opt/elobadge/repository
 git pull --ff-only
 cd deploy
 docker compose pull
@@ -130,7 +130,7 @@ Check `docker compose ps` and application logs after every update.
 ## 7. Roll Back
 
 Every build also has an immutable `sha-<commit>` tag. Change
-`CHESSBADGE_IMAGE` in `deploy/.env` to the previous tag and run:
+`ELOBADGE_IMAGE` in `deploy/.env` to the previous tag and run:
 
 ```sh
 docker compose pull app

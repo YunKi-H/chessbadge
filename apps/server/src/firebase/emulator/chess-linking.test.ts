@@ -28,7 +28,7 @@ import {
   updateStreamerOverlayAppearance
 } from "../overlays.js";
 
-const projectId = "demo-chessbadge-emulator";
+const projectId = "demo-elobadge-emulator";
 const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
 
 if (!emulatorHost) {

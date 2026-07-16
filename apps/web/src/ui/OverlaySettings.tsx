@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   DEFAULT_OVERLAY_APPEARANCE,
   type OverlayAppearance
-} from "@chessbadge/core";
+} from "@elobadge/core";
 import {
   ChevronDown,
   Copy,
@@ -56,7 +56,7 @@ const NICKNAME_COLOR_SWATCHES = [
 ] as const;
 
 const APPEARANCE_EXPANDED_STORAGE_KEY =
-  "chessbadge.streamer.appearance-expanded";
+  "elobadge.streamer.appearance-expanded";
 
 export function OverlaySettings({
   onAppearanceChange

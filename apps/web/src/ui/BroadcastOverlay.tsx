@@ -3,7 +3,7 @@ import {
   DEFAULT_OVERLAY_APPEARANCE,
   type ChatOverlayEvent,
   type OverlayAppearance
-} from "@chessbadge/core";
+} from "@elobadge/core";
 import {
   parseChatOverlayEvent,
   parseOverlayAppearanceEvent

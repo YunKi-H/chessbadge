@@ -32,7 +32,7 @@ importers:
 
   apps/server:
     dependencies:
-      '@chessbadge/core':
+      '@elobadge/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@fastify/cors':
@@ -78,7 +78,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@chessbadge/core':
+      '@elobadge/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@vitejs/plugin-react':

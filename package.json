@@ -1,5 +1,5 @@
 {
-  "name": "chessbadge",
+  "name": "elobadge",
   "private": true,
   "packageManager": "pnpm@11.7.0",
   "engines": {
@@ -7,14 +7,14 @@
     "pnpm": ">=11.7.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @chessbadge/core build && pnpm --parallel --filter @chessbadge/server --filter @chessbadge/web dev",
-    "dev:server": "pnpm --filter @chessbadge/server dev",
-    "dev:web": "pnpm --filter @chessbadge/web dev",
+    "dev": "pnpm --filter @elobadge/core build && pnpm --parallel --filter @elobadge/server --filter @elobadge/web dev",
+    "dev:server": "pnpm --filter @elobadge/server dev",
+    "dev:web": "pnpm --filter @elobadge/web dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "test:emulator": "firebase emulators:exec --only firestore --project demo-chessbadge-emulator \"pnpm --filter @chessbadge/server test:emulator:run\"",
-    "typecheck": "pnpm --filter @chessbadge/core build && pnpm -r typecheck",
-    "lint": "pnpm --filter @chessbadge/core build && pnpm -r lint"
+    "test:emulator": "firebase emulators:exec --only firestore --project demo-elobadge-emulator \"pnpm --filter @elobadge/server test:emulator:run\"",
+    "typecheck": "pnpm --filter @elobadge/core build && pnpm -r typecheck",
+    "lint": "pnpm --filter @elobadge/core build && pnpm -r lint"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

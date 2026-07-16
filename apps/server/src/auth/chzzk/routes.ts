@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { ChzzkLoginMode } from "@chessbadge/core";
+import type { ChzzkLoginMode } from "@elobadge/core";
 import { z } from "zod";
 import {
   createChzzkAuthorizationUrl,

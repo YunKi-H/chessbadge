@@ -1,4 +1,4 @@
-import type { RatingBadge as RatingBadgeData } from "@chessbadge/core";
+import type { RatingBadge as RatingBadgeData } from "@elobadge/core";
 
 export function RatingBadge({ rating }: { rating: RatingBadgeData }) {
   const providerName = rating.provider === "chesscom" ? "Chess.com" : "Lichess";

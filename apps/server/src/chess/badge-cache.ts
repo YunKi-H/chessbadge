@@ -1,4 +1,4 @@
-import type { RatingBadge } from "@chessbadge/core";
+import type { RatingBadge } from "@elobadge/core";
 import { getChzzkRatingBadge } from "../firebase/chess-badges.js";
 
 const DEFAULT_TTL_MS = 10 * 60_000;

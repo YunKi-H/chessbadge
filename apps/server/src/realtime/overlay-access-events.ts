@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { OverlayAppearance } from "@chessbadge/core";
+import type { OverlayAppearance } from "@elobadge/core";
 
 const overlayAccessEvents = new EventEmitter();
 overlayAccessEvents.setMaxListeners(100);

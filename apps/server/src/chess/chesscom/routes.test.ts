@@ -67,7 +67,7 @@ test("backfills the highest badge for an already verified account", async () => 
 test("creates a Chess.com location verification challenge", async () => {
   const app = await createApp({
     createVerification: async () => ({
-      code: "chessbadge-test-code",
+      code: "elobadge-test-code",
       expiresAt: new Date("2026-07-17T00:00:00.000Z")
     })
   });
@@ -79,7 +79,7 @@ test("creates a Chess.com location verification challenge", async () => {
 
   assert.equal(response.statusCode, 201);
   assert.deepEqual(response.json().verification, {
-    code: "chessbadge-test-code",
+    code: "elobadge-test-code",
     expiresAt: "2026-07-17T00:00:00.000Z"
   });
   await app.close();
@@ -88,7 +88,7 @@ test("creates a Chess.com location verification challenge", async () => {
 test("confirms ownership from the Chess.com location field", async () => {
   let completedLocation: string | null = null;
   const app = await createApp({
-    getProfile: async () => ({ ...player, location: "chessbadge-test-code" }),
+    getProfile: async () => ({ ...player, location: "elobadge-test-code" }),
     getPendingVerification: async () => ({
       accountId: "chesscom:testuser",
       username: "TestUser",
@@ -106,7 +106,7 @@ test("confirms ownership from the Chess.com location field", async () => {
   });
 
   assert.equal(response.statusCode, 200);
-  assert.equal(completedLocation, "chessbadge-test-code");
+  assert.equal(completedLocation, "elobadge-test-code");
   assert.equal(response.json().account.verified, true);
   await app.close();
 });
@@ -241,7 +241,7 @@ async function createApp(overrides: Partial<ChessComRouteDependencies> = {}) {
     }),
     disconnectAccount: async () => false,
     createVerification: async () => ({
-      code: "chessbadge-test-code",
+      code: "elobadge-test-code",
       expiresAt: new Date("2026-07-17T00:00:00.000Z")
     }),
     getPendingVerification: async () => ({

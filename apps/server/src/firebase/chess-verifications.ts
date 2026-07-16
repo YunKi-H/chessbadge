@@ -39,7 +39,7 @@ export async function createChessComLocationChallenge(
 ): Promise<ChessComVerificationChallenge> {
   const db = getFirestoreDb();
   const userRef = db.collection("users").doc(uid);
-  const code = `chessbadge-${randomBytes(10).toString("base64url")}`;
+  const code = `elobadge-${randomBytes(10).toString("base64url")}`;
   const expiresAt = new Date(Date.now() + CHALLENGE_LIFETIME_MS);
 
   await db.runTransaction(async (transaction) => {

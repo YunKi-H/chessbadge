@@ -1,6 +1,6 @@
 services:
   app:
-    image: ${CHESSBADGE_IMAGE:-ghcr.io/yunki-h/chessbadge:latest}
+    image: ${ELOBADGE_IMAGE:-ghcr.io/yunki-h/elobadge:latest}
     env_file:
       - .env
     environment:

@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import {
   DEFAULT_OVERLAY_APPEARANCE,
   type OverlayAppearance
-} from "@chessbadge/core";
+} from "@elobadge/core";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirestoreDb } from "./admin.js";
 

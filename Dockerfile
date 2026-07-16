@@ -10,9 +10,9 @@ COPY apps/server/package.json apps/server/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/core/package.json packages/core/package.json
 RUN pnpm install --frozen-lockfile --ignore-scripts \
-  --filter @chessbadge/core... \
-  --filter @chessbadge/server... \
-  --filter @chessbadge/web...
+  --filter @elobadge/core... \
+  --filter @elobadge/server... \
+  --filter @elobadge/web...
 
 FROM deps AS build
 ARG VITE_FIREBASE_API_KEY

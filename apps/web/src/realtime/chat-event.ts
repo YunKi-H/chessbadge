@@ -2,7 +2,7 @@ import type {
   ChatOverlayEvent,
   OverlayAppearance,
   RatingBadge
-} from "@chessbadge/core";
+} from "@elobadge/core";
 
 export function parseChatOverlayEvent(data: unknown): ChatOverlayEvent | null {
   if (typeof data !== "string") {

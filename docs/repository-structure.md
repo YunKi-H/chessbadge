@@ -28,7 +28,7 @@ firebase.json       Firebase CLI configuration
 ## Initial Deployment Shape
 
 ```text
-ECS service: chessbadge-app
+ECS service: elobadge-app
   - Fastify API
   - React/Vite static assets
   - SSE overlay event stream

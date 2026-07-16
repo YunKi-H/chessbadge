@@ -1,7 +1,7 @@
 import socketIoClient from "socket.io-client";
 import { z } from "zod";
 import type { FastifyBaseLogger } from "fastify";
-import type { ChatOverlayEvent, RatingBadge } from "@chessbadge/core";
+import type { ChatOverlayEvent, RatingBadge } from "@elobadge/core";
 import type { ChzzkAuthConfig } from "../auth/chzzk/client.js";
 import {
   createChzzkUserSession,

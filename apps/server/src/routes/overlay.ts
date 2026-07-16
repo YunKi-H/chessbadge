@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { ChatOverlayEvent, OverlayAppearance } from "@chessbadge/core";
+import type { ChatOverlayEvent, OverlayAppearance } from "@elobadge/core";
 import { z } from "zod";
 import { getRequiredFirebaseUser, requireFirebaseUser } from "../auth/firebase.js";
 import { getWebAppUrl } from "../config/web.js";

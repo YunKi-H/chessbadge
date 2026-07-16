@@ -1,4 +1,4 @@
-import type { OverlayAppearance } from "@chessbadge/core";
+import type { OverlayAppearance } from "@elobadge/core";
 import { getFirebaseClientAuth } from "../firebase/client";
 
 export async function authenticatedFetch(

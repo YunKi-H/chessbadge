@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { ChatOverlayEvent } from "@chessbadge/core";
+import type { ChatOverlayEvent } from "@elobadge/core";
 
 const overlayEvents = new EventEmitter();
 

@@ -12,7 +12,7 @@ export function App() {
       <header className="border-b border-white/10 bg-slate-950/80">
         <div className="mx-auto flex min-h-16 max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-6">
           <Link to="/" className="text-lg font-semibold text-white">
-            ChessBadge
+            EloBadge
           </Link>
           <nav className="flex items-center gap-1" aria-label="주요 메뉴">
             {navigation.map(({ to, label, icon: Icon }) => (

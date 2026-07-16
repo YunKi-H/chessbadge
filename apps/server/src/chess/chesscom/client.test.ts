@@ -5,7 +5,7 @@ import { ChessComClientError, createChessComClient } from "./client.js";
 test("loads a Chess.com profile and supported live ratings", async () => {
   const requestedPaths: string[] = [];
   const client = createChessComClient({
-    userAgent: "ChessBadge test@example.com",
+    userAgent: "EloBadge test@example.com",
     fetch: async (input) => {
       const url = new URL(input.toString());
       requestedPaths.push(url.pathname);
@@ -22,7 +22,7 @@ test("loads a Chess.com profile and supported live ratings", async () => {
               username: "Test-User",
               player_id: 42,
               status: "premium",
-              location: "chessbadge-example",
+              location: "elobadge-example",
               url: "https://www.chess.com/member/test-user"
             }
       );
@@ -38,7 +38,7 @@ test("loads a Chess.com profile and supported live ratings", async () => {
   assert.equal(player.username, "Test-User");
   assert.equal(player.normalizedUsername, "test-user");
   assert.equal(player.playerId, "42");
-  assert.equal(player.location, "chessbadge-example");
+  assert.equal(player.location, "elobadge-example");
   assert.deepEqual(
     player.ratings.map(({ speed, value }) => ({ speed, value })),
     [
@@ -51,7 +51,7 @@ test("loads a Chess.com profile and supported live ratings", async () => {
 
 test("maps a missing Chess.com account to a typed error", async () => {
   const client = createChessComClient({
-    userAgent: "ChessBadge test@example.com",
+    userAgent: "EloBadge test@example.com",
     fetch: async () => new Response(null, { status: 404 })
   });
 
@@ -66,7 +66,7 @@ test("serializes PubAPI requests across concurrent player lookups", async () => 
   let activeRequests = 0;
   let maximumActiveRequests = 0;
   const client = createChessComClient({
-    userAgent: "ChessBadge test@example.com",
+    userAgent: "EloBadge test@example.com",
     fetch: async (input) => {
       activeRequests += 1;
       maximumActiveRequests = Math.max(maximumActiveRequests, activeRequests);

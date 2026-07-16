@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   DEFAULT_OVERLAY_APPEARANCE,
   type OverlayAppearance
-} from "@chessbadge/core";
+} from "@elobadge/core";
 import { Radio } from "lucide-react";
 import { OverlayPreview } from "./OverlayPreview";
 import { OverlaySettings } from "./OverlaySettings";

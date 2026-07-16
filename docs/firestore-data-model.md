@@ -1,6 +1,6 @@
 # Firestore Data Model
 
-ChessBadge uses top-level collections with deterministic document IDs for the
+EloBadge uses top-level collections with deterministic document IDs for the
 lookups that happen on every chat message. Firestore access belongs to Fastify;
 the browser does not read or write these collections directly.
 
@@ -31,7 +31,7 @@ The service user created after a successful Chzzk custom-auth login.
 
 ### `chzzkAccounts/{chzzkChannelId}`
 
-Maps a chat sender directly to a ChessBadge user. `badge` is intentionally
+Maps a chat sender directly to a EloBadge user. `badge` is intentionally
 denormalized so the chat path needs only one document lookup before caching it.
 
 ```ts
