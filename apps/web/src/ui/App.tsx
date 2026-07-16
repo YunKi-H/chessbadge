@@ -34,7 +34,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <header className="border-b border-white/10 bg-slate-950/80">
         <div className="mx-auto flex min-h-16 max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-6">
           <Link to="/" className="text-lg font-semibold text-white">
@@ -71,9 +71,20 @@ export function App() {
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 sm:px-6 sm:py-10">
         <Outlet />
       </main>
+      <footer className="border-t border-white/10">
+        <div className="mx-auto w-full max-w-5xl px-5 py-5 text-sm text-slate-400 sm:px-6">
+          문의 및 오류 제보:{" "}
+          <a
+            href="mailto:support@elobadge.com"
+            className="font-medium text-slate-300 transition hover:text-white"
+          >
+            support@elobadge.com
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
