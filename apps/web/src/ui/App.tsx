@@ -1,5 +1,8 @@
-import { Radio, UserRound } from "lucide-react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { LogOut, Radio, UserRound } from "lucide-react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { getFirebaseClientAuth } from "../firebase/client";
 
 const navigation = [
   { to: "/streamer", label: "스트리머", icon: Radio },
@@ -7,6 +10,29 @@ const navigation = [
 ] as const;
 
 export function App() {
+  const navigate = useNavigate();
+  const [signedIn, setSignedIn] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    return onAuthStateChanged(getFirebaseClientAuth(), (user) => {
+      setSignedIn(Boolean(user));
+    });
+  }, []);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+
+    try {
+      await signOut(getFirebaseClientAuth());
+      void navigate("/", { replace: true });
+    } catch {
+      window.alert("로그아웃하지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-white/10 bg-slate-950/80">
@@ -31,6 +57,17 @@ export function App() {
                 {label}
               </NavLink>
             ))}
+            {signedIn ? (
+              <button
+                type="button"
+                disabled={signingOut}
+                onClick={() => void handleSignOut()}
+                className="ml-1 inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white disabled:opacity-50"
+              >
+                <LogOut aria-hidden="true" size={16} />
+                {signingOut ? "로그아웃 중" : "로그아웃"}
+              </button>
+            ) : null}
           </nav>
         </div>
       </header>
