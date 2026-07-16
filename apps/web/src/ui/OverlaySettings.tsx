@@ -152,9 +152,15 @@ export function OverlaySettings({
 
   return (
     <section className="mb-10 max-w-2xl border-y border-white/10 py-6">
-      <div className="mb-4 flex items-center gap-2">
-        <Link aria-hidden="true" className="text-emerald-300" size={20} />
-        <h2 className="text-lg font-semibold text-white">OBS 오버레이</h2>
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <Link aria-hidden="true" className="text-emerald-300" size={20} />
+          <h2 className="text-lg font-semibold text-white">OBS 오버레이</h2>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-400">
+          OBS 브라우저 소스 너비 600px에 최적화되어 있습니다. 높이는 방송
+          화면에 맞게 설정하세요.
+        </p>
       </div>
 
       {state.status === "loading" ? (
