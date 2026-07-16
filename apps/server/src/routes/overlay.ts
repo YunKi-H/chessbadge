@@ -194,16 +194,13 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
       reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
     };
 
-    let currentAppearance = activeOverlay.appearance;
     const sendAppearance = (appearance: OverlayAppearance) => {
-      currentAppearance = appearance;
       reply.raw.write("event: appearance\n");
       reply.raw.write(`data: ${JSON.stringify(appearance)}\n\n`);
     };
 
     let closed = false;
-    let validating = false;
-    sendAppearance(currentAppearance);
+    sendAppearance(activeOverlay.appearance);
     const unsubscribeChat = subscribeStreamerChatOverlayEvents(streamerUid, send);
     const unsubscribeAppearance = subscribeOverlayAppearance(
       publicToken,
@@ -223,32 +220,6 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
 
       reply.raw.write(`event: heartbeat\n`);
       reply.raw.write(`data: ${JSON.stringify({ at: new Date().toISOString() })}\n\n`);
-
-      if (!validating) {
-        validating = true;
-        void resolveActiveOverlayAccess(publicToken)
-          .then((refreshedOverlay) => {
-            if (refreshedOverlay?.streamerUid !== streamerUid && !closed) {
-              reply.raw.end();
-              return;
-            }
-
-            if (
-              refreshedOverlay &&
-              appearanceKey(refreshedOverlay.appearance) !==
-                appearanceKey(currentAppearance) &&
-              !closed
-            ) {
-              sendAppearance(refreshedOverlay.appearance);
-            }
-          })
-          .catch((error: unknown) => {
-            request.log.warn({ err: error }, "Overlay access revalidation failed");
-          })
-          .finally(() => {
-            validating = false;
-          });
-      }
     }, 15_000);
 
     const cleanup = () => {
@@ -275,10 +246,6 @@ function toOverlayResponse(overlay: StreamerOverlayAccess) {
     appearance: overlay.appearance,
     url: new URL(`/overlay/${overlay.publicToken}`, getWebAppUrl()).toString()
   };
-}
-
-function appearanceKey(appearance: OverlayAppearance): string {
-  return JSON.stringify(appearance);
 }
 
 function sendOverlayManagementError(error: unknown, reply: import("fastify").FastifyReply) {
