@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   type ChatAuthorKind,
   type ChzzkBadgeKind,
@@ -7,11 +7,14 @@ import {
   type OverlayMessageDurationSeconds
 } from "@elobadge/core";
 import {
+  BadgeCheck,
   ChevronDown,
+  Clock3,
   Copy,
   Eye,
   EyeOff,
   Link,
+  PaintBucket,
   Palette,
   Power,
   RefreshCw,
@@ -34,6 +37,10 @@ type SettingsState =
   | { status: "signed_out" }
   | { status: "ready"; overlay: OverlayAccess | null }
   | { status: "error"; message: string };
+
+type AppearanceSection = "general" | "badges" | "background" | "colors";
+
+type ExpandedAppearanceSections = Record<AppearanceSection, boolean>;
 
 const MESSAGE_COLOR_SWATCHES = [
   "#FFFFFF",
@@ -60,8 +67,15 @@ const NICKNAME_COLOR_SWATCHES = [
   "#FDBA74"
 ] as const;
 
-const APPEARANCE_EXPANDED_STORAGE_KEY =
-  "elobadge.streamer.appearance-expanded";
+const APPEARANCE_SECTIONS_STORAGE_KEY =
+  "elobadge.streamer.appearance-sections";
+
+const DEFAULT_EXPANDED_APPEARANCE_SECTIONS: ExpandedAppearanceSections = {
+  general: true,
+  badges: true,
+  background: true,
+  colors: true
+};
 
 const MESSAGE_DURATION_OPTIONS = [10, 20, 30, 60, 0] as const;
 
@@ -97,8 +111,8 @@ export function OverlaySettings({
   const [copied, setCopied] = useState(false);
   const [urlVisible, setUrlVisible] = useState(false);
   const [appearanceDirty, setAppearanceDirty] = useState(false);
-  const [appearanceExpanded, setAppearanceExpanded] = useState(
-    readAppearanceExpanded
+  const [expandedSections, setExpandedSections] = useState(
+    readExpandedAppearanceSections
   );
 
   useEffect(() => {
@@ -118,7 +132,7 @@ export function OverlaySettings({
           }
         })
         .catch((error: unknown) => {
-          setAppearanceExpanded(true);
+          setExpandedSections({ ...DEFAULT_EXPANDED_APPEARANCE_SECTIONS });
           setState(toErrorState(error));
         });
     });
@@ -137,7 +151,7 @@ export function OverlaySettings({
         onAppearanceChange(overlay.appearance);
       }
     } catch (error) {
-      setAppearanceExpanded(true);
+      setExpandedSections({ ...DEFAULT_EXPANDED_APPEARANCE_SECTIONS });
       setState(toErrorState(error));
     } finally {
       setUpdating(false);
@@ -160,14 +174,14 @@ export function OverlaySettings({
     onAppearanceChange(appearance);
   };
 
-  const toggleAppearanceExpanded = () => {
-    setAppearanceExpanded((current) => {
-      const next = !current;
+  const toggleAppearanceSection = (section: AppearanceSection) => {
+    setExpandedSections((current) => {
+      const next = { ...current, [section]: !current[section] };
 
       try {
         window.localStorage.setItem(
-          APPEARANCE_EXPANDED_STORAGE_KEY,
-          String(next)
+          APPEARANCE_SECTIONS_STORAGE_KEY,
+          JSON.stringify(next)
         );
       } catch {
         // The disclosure still works when browser storage is unavailable.
@@ -334,30 +348,14 @@ export function OverlaySettings({
             ) : null}
           </div>
 
-          <div className="border-t border-white/10 pt-5">
-            <button
-              type="button"
-              aria-expanded={appearanceExpanded}
-              aria-controls="overlay-appearance-settings"
-              onClick={toggleAppearanceExpanded}
-              className="flex w-full items-center justify-between gap-4 text-left"
+          <div className="border-t border-white/10">
+            <SettingsDisclosure
+              id="overlay-general-settings"
+              title="기본 설정"
+              icon={<Clock3 aria-hidden="true" size={18} />}
+              expanded={expandedSections.general}
+              onToggle={() => toggleAppearanceSection("general")}
             >
-              <span className="flex items-center gap-2">
-                <Palette aria-hidden="true" className="text-sky-300" size={18} />
-                <span className="font-semibold text-white">채팅 화면</span>
-              </span>
-              <ChevronDown
-                aria-hidden="true"
-                size={18}
-                className={`shrink-0 text-slate-400 transition-transform ${appearanceExpanded ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {appearanceExpanded ? (
-              <div
-                id="overlay-appearance-settings"
-                className="mt-5 space-y-5"
-              >
                 <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
                   채팅 표시 시간
                   <select
@@ -380,7 +378,15 @@ export function OverlaySettings({
                     ))}
                   </select>
                 </label>
+            </SettingsDisclosure>
 
+            <SettingsDisclosure
+              id="overlay-badge-settings"
+              title="치지직 배지"
+              icon={<BadgeCheck aria-hidden="true" size={18} />}
+              expanded={expandedSections.badges}
+              onToggle={() => toggleAppearanceSection("badges")}
+            >
                 <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
                   치지직 배지 전체 표시
                   <input
@@ -423,9 +429,17 @@ export function OverlaySettings({
                     ))}
                   </div>
                 </fieldset>
+            </SettingsDisclosure>
 
+            <SettingsDisclosure
+              id="overlay-background-settings"
+              title="채팅 배경"
+              icon={<PaintBucket aria-hidden="true" size={18} />}
+              expanded={expandedSections.background}
+              onToggle={() => toggleAppearanceSection("background")}
+            >
               <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
-                채팅 배경
+                배경 표시
                 <input
                   type="checkbox"
                   checked={overlay.appearance.backgroundVisible}
@@ -497,7 +511,16 @@ export function OverlaySettings({
                   className="w-full accent-emerald-500 disabled:opacity-40"
                 />
               </label>
+            </SettingsDisclosure>
 
+            <SettingsDisclosure
+              id="overlay-color-settings"
+              title="채팅 색상"
+              icon={<Palette aria-hidden="true" size={18} />}
+              expanded={expandedSections.colors}
+              onToggle={() => toggleAppearanceSection("colors")}
+            >
+              <div className="space-y-5">
               <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
                 닉네임 표시
                 <input
@@ -598,7 +621,7 @@ export function OverlaySettings({
                 ) : null}
               </fieldset>
 
-              <fieldset>
+              <fieldset className="border-t border-white/10 pt-5">
                 <legend className="mb-3 text-sm font-medium text-slate-200">
                   메시지 색상
                 </legend>
@@ -679,8 +702,10 @@ export function OverlaySettings({
                   </div>
                 ) : null}
               </fieldset>
+              </div>
+            </SettingsDisclosure>
 
-              <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 pt-5">
                 <button
                   type="button"
                   disabled={!appearanceDirty || updating}
@@ -715,9 +740,7 @@ export function OverlaySettings({
                   <RotateCcw aria-hidden="true" size={17} />
                   기본값으로 초기화
                 </button>
-              </div>
-              </div>
-            ) : null}
+            </div>
           </div>
         </div>
       ) : null}
@@ -725,14 +748,75 @@ export function OverlaySettings({
   );
 }
 
-function readAppearanceExpanded(): boolean {
+function SettingsDisclosure({
+  id,
+  title,
+  icon,
+  expanded,
+  onToggle,
+  children
+}: {
+  id: string;
+  title: string;
+  icon: ReactNode;
+  expanded: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-b border-white/10 py-4">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={id}
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 text-left"
+      >
+        <span className="flex items-center gap-2 text-sky-300">
+          {icon}
+          <span className="font-semibold text-white">{title}</span>
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          size={18}
+          className={`shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+      {expanded ? (
+        <div id={id} className="mt-4 space-y-5 pl-0 sm:pl-7">
+          {children}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function readExpandedAppearanceSections(): ExpandedAppearanceSections {
   try {
-    const stored = window.localStorage.getItem(
-      APPEARANCE_EXPANDED_STORAGE_KEY
-    );
-    return stored === null ? true : stored === "true";
+    const stored = window.localStorage.getItem(APPEARANCE_SECTIONS_STORAGE_KEY);
+
+    if (!stored) {
+      return { ...DEFAULT_EXPANDED_APPEARANCE_SECTIONS };
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+
+    if (!parsed || typeof parsed !== "object") {
+      return { ...DEFAULT_EXPANDED_APPEARANCE_SECTIONS };
+    }
+
+    const sections = parsed as Partial<ExpandedAppearanceSections>;
+
+    return {
+      general:
+        typeof sections.general === "boolean" ? sections.general : true,
+      badges: typeof sections.badges === "boolean" ? sections.badges : true,
+      background:
+        typeof sections.background === "boolean" ? sections.background : true,
+      colors: typeof sections.colors === "boolean" ? sections.colors : true
+    };
   } catch {
-    return true;
+    return { ...DEFAULT_EXPANDED_APPEARANCE_SECTIONS };
   }
 }
 
