@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { OVERLAY_FONT_FAMILY_VALUES } from "@elobadge/core";
 import {
   generateOverlayPublicToken,
   normalizeOverlayAppearance
@@ -146,6 +147,12 @@ test("overlay appearance rejects unsupported font settings", () => {
   assert.equal(appearance.fontSizePx, 18);
   assert.equal(appearance.fontWeight, 400);
   assert.equal(appearance.fontLineHeight, 1.4);
+});
+
+test("overlay appearance accepts every supported font preset", () => {
+  for (const fontFamily of OVERLAY_FONT_FAMILY_VALUES) {
+    assert.equal(normalizeOverlayAppearance({ fontFamily }).fontFamily, fontFamily);
+  }
 });
 
 test("overlay appearance fills missing badge visibility for legacy themes", () => {

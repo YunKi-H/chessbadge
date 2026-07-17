@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import {
   DEFAULT_OVERLAY_APPEARANCE,
+  isOverlayFontFamily,
   type OverlayAppearance
 } from "@elobadge/core";
 import { FieldValue } from "firebase-admin/firestore";
@@ -210,13 +211,9 @@ export function normalizeOverlayAppearance(value: unknown): OverlayAppearance {
     messageRoleColors: normalizeMessageRoleColors(
       appearance.messageRoleColors
     ),
-    fontFamily:
-      appearance.fontFamily === "system" ||
-      appearance.fontFamily === "pretendard" ||
-      appearance.fontFamily === "freesentation" ||
-      appearance.fontFamily === "paperlogy"
-        ? appearance.fontFamily
-        : DEFAULT_OVERLAY_APPEARANCE.fontFamily,
+    fontFamily: isOverlayFontFamily(appearance.fontFamily)
+      ? appearance.fontFamily
+      : DEFAULT_OVERLAY_APPEARANCE.fontFamily,
     fontSizePx:
       typeof appearance.fontSizePx === "number" &&
       Number.isInteger(appearance.fontSizePx) &&

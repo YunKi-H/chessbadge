@@ -11,7 +11,19 @@ const OVERLAY_FONT_FAMILIES: Record<OverlayFontFamily, string> = {
   system: SYSTEM_FONT_FAMILY,
   pretendard: `"Pretendard", ${SYSTEM_FONT_FAMILY}`,
   "freesentation": `"Freesentation", ${SYSTEM_FONT_FAMILY}`,
-  paperlogy: `"Paperlogy", ${SYSTEM_FONT_FAMILY}`
+  paperlogy: `"Paperlogy", ${SYSTEM_FONT_FAMILY}`,
+  noto_sans_kr: `"Noto Sans KR", ${SYSTEM_FONT_FAMILY}`,
+  aggro: `"Aggro", ${SYSTEM_FONT_FAMILY}`,
+  nanum_square: `"NanumSquare", ${SYSTEM_FONT_FAMILY}`,
+  nanum_square_neo: `"NanumSquareNeo", ${SYSTEM_FONT_FAMILY}`,
+  nanum_square_round: `"NanumSquareRound", ${SYSTEM_FONT_FAMILY}`,
+  jalnan: `"Jalnan", ${SYSTEM_FONT_FAMILY}`,
+  maru_buri: `"MaruBuri", serif`,
+  nanum_gothic: `"Nanum Gothic", ${SYSTEM_FONT_FAMILY}`,
+  nanum_myeongjo: `"Nanum Myeongjo", serif`,
+  chosun_gungseo: `"ChosunGungseo", serif`,
+  mona12: `"Mona12", ${SYSTEM_FONT_FAMILY}`,
+  dohyeon: `"Dohyeon", ${SYSTEM_FONT_FAMILY}`
 };
 
 const USER_NICKNAME_COLORS = [

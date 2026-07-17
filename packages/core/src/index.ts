@@ -6,11 +6,36 @@ export type NicknameColorMode = "fixed" | "by_user" | "by_role";
 
 export type MessageColorMode = "fixed" | "by_role";
 
+export const OVERLAY_FONT_FAMILY_VALUES = [
+  "system",
+  "pretendard",
+  "freesentation",
+  "paperlogy",
+  "noto_sans_kr",
+  "aggro",
+  "nanum_square",
+  "nanum_square_neo",
+  "nanum_square_round",
+  "jalnan",
+  "maru_buri",
+  "nanum_gothic",
+  "nanum_myeongjo",
+  "chosun_gungseo",
+  "mona12",
+  "dohyeon"
+] as const;
+
 export type OverlayFontFamily =
-  | "system"
-  | "pretendard"
-  | "freesentation"
-  | "paperlogy";
+  (typeof OVERLAY_FONT_FAMILY_VALUES)[number];
+
+export function isOverlayFontFamily(
+  value: unknown
+): value is OverlayFontFamily {
+  return (
+    typeof value === "string" &&
+    (OVERLAY_FONT_FAMILY_VALUES as readonly string[]).includes(value)
+  );
+}
 
 export type OverlayFontWeight = 400 | 500 | 600 | 700 | 900;
 

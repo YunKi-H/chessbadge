@@ -1,4 +1,7 @@
-import type { OverlayAppearance } from "@elobadge/core";
+import {
+  isOverlayFontFamily,
+  type OverlayAppearance
+} from "@elobadge/core";
 import { getFirebaseClientAuth } from "../firebase/client";
 
 export async function authenticatedFetch(
@@ -301,10 +304,7 @@ function isOverlayAppearance(value: unknown): value is OverlayAppearance {
     typeof appearance.messageColor === "string" &&
     /^#[0-9A-Fa-f]{6}$/.test(appearance.messageColor) &&
     isChatAuthorColors(appearance.messageRoleColors) &&
-    (appearance.fontFamily === "system" ||
-      appearance.fontFamily === "pretendard" ||
-      appearance.fontFamily === "freesentation" ||
-      appearance.fontFamily === "paperlogy") &&
+    isOverlayFontFamily(appearance.fontFamily) &&
     typeof appearance.fontSizePx === "number" &&
     Number.isInteger(appearance.fontSizePx) &&
     appearance.fontSizePx >= 12 &&

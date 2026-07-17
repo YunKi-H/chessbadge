@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import {
   DEFAULT_OVERLAY_APPEARANCE,
+  OVERLAY_FONT_FAMILY_VALUES,
   type ChatOverlayEvent,
   type OverlayAppearance
 } from "@elobadge/core";
@@ -70,12 +71,7 @@ const overlayAppearanceSchema = z.object({
     subscriber: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
     viewer: z.string().regex(/^#[0-9A-Fa-f]{6}$/)
   }).default(DEFAULT_OVERLAY_APPEARANCE.messageRoleColors),
-  fontFamily: z.enum([
-    "system",
-    "pretendard",
-    "freesentation",
-    "paperlogy"
-  ]).default("system"),
+  fontFamily: z.enum(OVERLAY_FONT_FAMILY_VALUES).default("system"),
   fontSizePx: z.number().int().min(12).max(36).default(18),
   fontWeight: z.union([
     z.literal(400),

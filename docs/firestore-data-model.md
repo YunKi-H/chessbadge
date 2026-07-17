@@ -150,7 +150,23 @@ token fields. The current in-process refresh lock assumes one ECS server task.
       subscriber: string;
       viewer: string;
     }; // #RRGGBB values used by role mode
-    fontFamily: "system" | "pretendard" | "freesentation" | "paperlogy";
+    fontFamily:
+      | "system"
+      | "pretendard"
+      | "freesentation"
+      | "paperlogy"
+      | "noto_sans_kr"
+      | "aggro"
+      | "nanum_square"
+      | "nanum_square_neo"
+      | "nanum_square_round"
+      | "jalnan"
+      | "maru_buri"
+      | "nanum_gothic"
+      | "nanum_myeongjo"
+      | "chosun_gungseo"
+      | "mona12"
+      | "dohyeon";
     fontSizePx: number; // integer from 12 through 36
     fontWeight: 400 | 500 | 600 | 700 | 900;
     fontLineHeight: 1.2 | 1.4 | 1.6;

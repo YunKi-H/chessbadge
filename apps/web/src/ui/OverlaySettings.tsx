@@ -98,7 +98,19 @@ const FONT_FAMILY_OPTIONS: ReadonlyArray<{
   { value: "system", label: "시스템 기본" },
   { value: "pretendard", label: "프리텐다드" },
   { value: "freesentation", label: "프리젠테이션" },
-  { value: "paperlogy", label: "페이퍼로지" }
+  { value: "paperlogy", label: "페이퍼로지" },
+  { value: "noto_sans_kr", label: "본고딕" },
+  { value: "aggro", label: "어그로체" },
+  { value: "nanum_square", label: "나눔스퀘어" },
+  { value: "nanum_square_neo", label: "나눔스퀘어 네오" },
+  { value: "nanum_square_round", label: "나눔스퀘어 라운드" },
+  { value: "jalnan", label: "여기어때 잘난체" },
+  { value: "maru_buri", label: "마루 부리" },
+  { value: "nanum_gothic", label: "나눔고딕" },
+  { value: "nanum_myeongjo", label: "나눔명조" },
+  { value: "chosun_gungseo", label: "조선궁서체" },
+  { value: "mona12", label: "Mona12" },
+  { value: "dohyeon", label: "도현체" }
 ];
 
 const FONT_WEIGHT_OPTIONS: ReadonlyArray<OverlayFontWeight> = [
@@ -975,7 +987,7 @@ function FontFamilySelect({
           id="overlay-font-options"
           role="listbox"
           aria-label="채팅 폰트"
-          className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-md border border-white/10 bg-slate-950 py-1 shadow-xl shadow-black/40"
+          className="absolute left-0 right-0 top-full z-30 mt-1 max-h-72 overflow-y-auto overscroll-contain rounded-md border border-white/10 bg-slate-950 py-1 shadow-xl shadow-black/40"
         >
           {FONT_FAMILY_OPTIONS.map((option) => {
             const selected = option.value === value;

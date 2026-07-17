@@ -1,11 +1,12 @@
-import type {
-  ChatAuthorKind,
-  ChatOverlayEvent,
-  ChzzkBadge,
-  ChzzkBadgeKind,
-  ChzzkEmoji,
-  OverlayAppearance,
-  RatingBadge
+import {
+  isOverlayFontFamily,
+  type ChatAuthorKind,
+  type ChatOverlayEvent,
+  type ChzzkBadge,
+  type ChzzkBadgeKind,
+  type ChzzkEmoji,
+  type OverlayAppearance,
+  type RatingBadge
 } from "@elobadge/core";
 
 export function parseChatOverlayEvent(data: unknown): ChatOverlayEvent | null {
@@ -129,10 +130,7 @@ export function parseOverlayAppearanceEvent(
     typeof appearance.messageColor !== "string" ||
     !/^#[0-9A-Fa-f]{6}$/.test(appearance.messageColor) ||
     !isChatAuthorColors(appearance.messageRoleColors) ||
-    (appearance.fontFamily !== "system" &&
-      appearance.fontFamily !== "pretendard" &&
-      appearance.fontFamily !== "freesentation" &&
-      appearance.fontFamily !== "paperlogy") ||
+    !isOverlayFontFamily(appearance.fontFamily) ||
     typeof appearance.fontSizePx !== "number" ||
     !Number.isInteger(appearance.fontSizePx) ||
     appearance.fontSizePx < 12 ||
