@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  ChzzkTokenRequestError,
   getChzzkUserSessions,
   refreshChzzkAccessToken,
   revokeChzzkToken,
@@ -47,6 +48,30 @@ test("Chzzk token refresh sends the one-time refresh token", async () => {
     assert.equal(token.accessToken, "new-access-token");
     assert.equal(token.refreshToken, "new-refresh-token");
     assert.equal(token.expiresIn, 86400);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Chzzk token errors preserve the API error code and message", async () => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ code: 401, message: "INVALID_TOKEN" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+
+  try {
+    await assert.rejects(
+      revokeChzzkToken(config, "expired-token", "refresh_token"),
+      (error) => {
+        assert.ok(error instanceof ChzzkTokenRequestError);
+        assert.equal(error.errorCode, "401");
+        assert.equal(error.responseMessage, "INVALID_TOKEN");
+        return true;
+      }
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }

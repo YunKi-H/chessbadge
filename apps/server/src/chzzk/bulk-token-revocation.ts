@@ -1,5 +1,8 @@
 import type { ChzzkAuthConfig } from "../auth/chzzk/client.js";
-import { revokeChzzkToken } from "../auth/chzzk/client.js";
+import {
+  isChzzkInvalidTokenError,
+  revokeChzzkToken
+} from "../auth/chzzk/client.js";
 import {
   deleteChzzkStreamerTokens,
   listChzzkStreamerTokenUids,
@@ -28,6 +31,7 @@ export interface BulkTokenRevocationFailure {
 export interface BulkTokenRevocationResult {
   total: number;
   revoked: string[];
+  alreadyInvalid: string[];
   skipped: string[];
   failures: BulkTokenRevocationFailure[];
 }
@@ -40,6 +44,7 @@ export async function revokeAllChzzkStreamerTokens(
   const result: BulkTokenRevocationResult = {
     total: uids.length,
     revoked: [],
+    alreadyInvalid: [],
     skipped: [],
     failures: []
   };
@@ -54,11 +59,34 @@ export async function revokeAllChzzkStreamerTokens(
         continue;
       }
 
-      await dependencies.revokeToken(
-        config,
-        tokens.refreshToken,
-        "refresh_token"
-      );
+      try {
+        await dependencies.revokeToken(
+          config,
+          tokens.refreshToken,
+          "refresh_token"
+        );
+      } catch (refreshError) {
+        if (!isChzzkInvalidTokenError(refreshError)) {
+          throw refreshError;
+        }
+
+        try {
+          await dependencies.revokeToken(
+            config,
+            tokens.accessToken,
+            "access_token"
+          );
+        } catch (accessError) {
+          if (!isChzzkInvalidTokenError(accessError)) {
+            throw accessError;
+          }
+
+          await dependencies.deleteTokens(uid);
+          result.alreadyInvalid.push(uid);
+          continue;
+        }
+      }
+
       await dependencies.deleteTokens(uid);
       result.revoked.push(uid);
     } catch (error) {

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { ChzzkAuthConfig } from "../auth/chzzk/client.js";
+import {
+  ChzzkTokenRequestError,
+  type ChzzkAuthConfig
+} from "../auth/chzzk/client.js";
 import { revokeAllChzzkStreamerTokens } from "./bulk-token-revocation.js";
 
 const config: ChzzkAuthConfig = {
@@ -39,6 +42,61 @@ test("revokes each stored token before deleting it", async () => {
   assert.deepEqual(result.failures, []);
 });
 
+test("falls back to the access token when the refresh token is invalid", async () => {
+  const operations: string[] = [];
+  const result = await revokeAllChzzkStreamerTokens(config, {
+    listUids: async () => ["streamer"],
+    loadTokens: async () => ({
+      accessToken: "access",
+      refreshToken: "refresh",
+      tokenType: "Bearer",
+      expiresAt: new Date(),
+      scope: null
+    }),
+    revokeToken: async (_config, token, hint) => {
+      operations.push(`revoke:${token}:${hint}`);
+
+      if (hint === "refresh_token") {
+        throw new ChzzkTokenRequestError(401, "401", "INVALID_TOKEN");
+      }
+    },
+    deleteTokens: async (uid) => {
+      operations.push(`delete:${uid}`);
+    }
+  });
+
+  assert.deepEqual(operations, [
+    "revoke:refresh:refresh_token",
+    "revoke:access:access_token",
+    "delete:streamer"
+  ]);
+  assert.deepEqual(result.revoked, ["streamer"]);
+});
+
+test("removes local tokens when both remote tokens are already invalid", async () => {
+  const deleted: string[] = [];
+  const result = await revokeAllChzzkStreamerTokens(config, {
+    listUids: async () => ["expired"],
+    loadTokens: async () => ({
+      accessToken: "access",
+      refreshToken: "refresh",
+      tokenType: "Bearer",
+      expiresAt: new Date(),
+      scope: null
+    }),
+    revokeToken: async () => {
+      throw new ChzzkTokenRequestError(401, "401", "INVALID_TOKEN");
+    },
+    deleteTokens: async (uid) => {
+      deleted.push(uid);
+    }
+  });
+
+  assert.deepEqual(deleted, ["expired"]);
+  assert.deepEqual(result.alreadyInvalid, ["expired"]);
+  assert.deepEqual(result.failures, []);
+});
+
 test("keeps local tokens when remote revocation fails", async () => {
   const deleted: string[] = [];
   const result = await revokeAllChzzkStreamerTokens(config, {
@@ -65,4 +123,28 @@ test("keeps local tokens when remote revocation fails", async () => {
   assert.deepEqual(result.skipped, ["missing"]);
   assert.equal(result.failures.length, 1);
   assert.equal(result.failures[0]?.uid, "broken");
+});
+
+test("keeps local tokens when the Chzzk client credentials are invalid", async () => {
+  const deleted: string[] = [];
+  const result = await revokeAllChzzkStreamerTokens(config, {
+    listUids: async () => ["streamer"],
+    loadTokens: async () => ({
+      accessToken: "access",
+      refreshToken: "refresh",
+      tokenType: "Bearer",
+      expiresAt: new Date(),
+      scope: null
+    }),
+    revokeToken: async () => {
+      throw new ChzzkTokenRequestError(401, "401", "INVALID_CLIENT");
+    },
+    deleteTokens: async (uid) => {
+      deleted.push(uid);
+    }
+  });
+
+  assert.deepEqual(deleted, []);
+  assert.equal(result.failures.length, 1);
+  assert.equal(result.failures[0]?.uid, "streamer");
 });

@@ -72,10 +72,28 @@ export interface ChzzkUserSession {
 export type ChzzkTokenTypeHint = "access_token" | "refresh_token";
 
 export class ChzzkTokenRequestError extends Error {
-  constructor(readonly status: number) {
-    super(`Chzzk token request failed with status ${status}`);
+  constructor(
+    readonly status: number,
+    readonly errorCode: string | null = null,
+    readonly responseMessage: string | null = null
+  ) {
+    const detail = responseMessage ?? errorCode;
+    super(
+      `Chzzk token request failed with status ${status}${detail ? ` (${detail})` : ""}`
+    );
     this.name = "ChzzkTokenRequestError";
   }
+}
+
+export function isChzzkInvalidTokenError(
+  error: unknown
+): error is ChzzkTokenRequestError {
+  return (
+    error instanceof ChzzkTokenRequestError &&
+    error.status === 401 &&
+    (error.errorCode === "INVALID_TOKEN" ||
+      error.responseMessage === "INVALID_TOKEN")
+  );
 }
 
 export function getChzzkAuthConfig(): ChzzkAuthConfig {
@@ -152,8 +170,10 @@ export async function revokeChzzkToken(
     })
   });
 
+  const body: unknown = await response.json().catch(() => null);
+
   if (!response.ok) {
-    throw new ChzzkTokenRequestError(response.status);
+    throw createChzzkTokenRequestError(response.status, body);
   }
 }
 
@@ -173,7 +193,7 @@ async function requestChzzkToken(
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new ChzzkTokenRequestError(response.status);
+    throw createChzzkTokenRequestError(response.status, body);
   }
 
   const content = unwrapChzzkContent(body);
@@ -186,6 +206,24 @@ async function requestChzzkToken(
     expiresIn: parsed.expiresIn,
     scope: parsed.scope ?? null
   };
+}
+
+function createChzzkTokenRequestError(
+  status: number,
+  body: unknown
+): ChzzkTokenRequestError {
+  if (!body || typeof body !== "object") {
+    return new ChzzkTokenRequestError(status);
+  }
+
+  const code = "code" in body ? body.code : null;
+  const message = "message" in body ? body.message : null;
+
+  return new ChzzkTokenRequestError(
+    status,
+    typeof code === "string" || typeof code === "number" ? String(code) : null,
+    typeof message === "string" ? message : null
+  );
 }
 
 export async function createChzzkUserSession(

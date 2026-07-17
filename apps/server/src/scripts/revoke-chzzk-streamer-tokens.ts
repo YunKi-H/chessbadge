@@ -35,7 +35,7 @@ for (const failure of result.failures) {
 }
 
 console.log(
-  `Finished: ${result.revoked.length} revoked, ${result.skipped.length} skipped, ${result.failures.length} failed.`
+  `Finished: ${result.revoked.length} revoked, ${result.alreadyInvalid.length} already invalid and removed, ${result.skipped.length} skipped, ${result.failures.length} failed.`
 );
 
 if (result.failures.length > 0) {
