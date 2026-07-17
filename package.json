@@ -10,6 +10,7 @@
     "dev": "pnpm --filter @elobadge/core build && pnpm --parallel --filter @elobadge/server --filter @elobadge/web dev",
     "dev:server": "pnpm --filter @elobadge/server dev",
     "dev:web": "pnpm --filter @elobadge/web dev",
+    "chzzk:revoke-all": "pnpm --filter @elobadge/server chzzk:revoke-all",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "test:emulator": "firebase emulators:exec --only firestore --project demo-elobadge-emulator \"pnpm --filter @elobadge/server test:emulator:run\"",

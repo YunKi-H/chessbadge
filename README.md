@@ -147,6 +147,20 @@ POST /api/chess/chesscom/verification/confirm
 The Chzzk session manager also records the owning Firebase UID, so an authenticated
 user cannot inspect or stop another user's active session.
 
+Before changing Chzzk application permissions, an operator can inspect and revoke
+all persisted streamer tokens with the one-off CLI. It is a dry run by default;
+execution requires the current Firebase project ID as an explicit confirmation.
+
+```bash
+pnpm chzzk:revoke-all
+pnpm chzzk:revoke-all --execute --confirm-project=<FIREBASE_PROJECT_ID>
+```
+
+The command calls Chzzk token revocation sequentially and deletes a local token
+only after remote revocation succeeds. Failed documents remain available for a
+later retry. Streamers authorize again through the normal streamer login flow;
+the dashboard does not show a separate migration status.
+
 ## Chess.com Rating Link
 
 The viewer page at `/viewer` can register a Chess.com username. Fastify reads

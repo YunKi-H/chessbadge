@@ -105,6 +105,11 @@ export async function loadChzzkStreamerTokens(
   }
 }
 
+export async function listChzzkStreamerTokenUids(): Promise<string[]> {
+  const snapshot = await getFirestoreDb().collection("chzzkTokens").get();
+  return snapshot.docs.map((document) => document.id);
+}
+
 export async function deleteChzzkStreamerTokens(uid: string): Promise<void> {
   const db = getFirestoreDb();
   const batch = db.batch();
