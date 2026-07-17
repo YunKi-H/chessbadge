@@ -124,6 +124,7 @@ test("published chat includes the sender's cached rating badge", async () => {
   const events: Array<{
     rating: { value: number } | null;
     chzzkBadges?: Array<{ imageUrl: string }>;
+    emojis: Array<{ token: string; imageUrl: string }>;
     authorKind: string;
   }> = [];
   const unsubscribe = subscribeStreamerChatOverlayEvents("streamer-a", (event) => {
@@ -141,6 +142,10 @@ test("published chat includes the sender's cached rating badge", async () => {
       userRoleCode: "common_user"
     },
     content: "good move",
+    emojis: {
+      brilliant: "https://example.com/brilliant.png",
+      ":checkmate:": "https://example.com/checkmate.png"
+    },
     messageTime: 1_783_000_000_000
   });
   await waitFor(() => events.length === 1);
@@ -150,6 +155,16 @@ test("published chat includes the sender's cached rating badge", async () => {
     { imageUrl: "https://example.com/badge.png" }
   ]);
   assert.equal(events[0]?.authorKind, "subscriber");
+  assert.deepEqual(events[0]?.emojis, [
+    {
+      token: "{:brilliant:}",
+      imageUrl: "https://example.com/brilliant.png"
+    },
+    {
+      token: "{:checkmate:}",
+      imageUrl: "https://example.com/checkmate.png"
+    }
+  ]);
   assert.deepEqual(badgeDiagnostics, [
     {
       context: {

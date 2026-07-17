@@ -28,6 +28,7 @@ function chatEvent(id: string): ChatOverlayEvent {
     nickname: "viewer",
     content: "message",
     rating: null,
+    emojis: [],
     authorKind: "viewer",
     sentAt: "2026-07-14T00:00:00.000Z"
   };

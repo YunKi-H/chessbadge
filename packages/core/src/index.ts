@@ -30,12 +30,18 @@ export interface ChzzkBadge {
   imageUrl: string;
 }
 
+export interface ChzzkEmoji {
+  token: string;
+  imageUrl: string;
+}
+
 export interface ChatOverlayEvent {
   id: string;
   nickname: string;
   content: string;
   rating: RatingBadge | null;
   chzzkBadges?: ChzzkBadge[];
+  emojis: ChzzkEmoji[];
   authorKind: ChatAuthorKind;
   sentAt: string;
   source?: {

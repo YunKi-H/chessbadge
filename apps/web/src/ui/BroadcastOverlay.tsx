@@ -13,6 +13,7 @@ import {
   overlayNicknameColor
 } from "./overlay-appearance";
 import { ChzzkBadges } from "./ChzzkBadges";
+import { ChatMessageContent } from "./ChatMessageContent";
 import { useOverlayMessageQueue } from "./useOverlayMessageQueue";
 
 export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
@@ -85,15 +86,10 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
                 {message.nickname}:
               </span>
             ) : null}
-            <span
-              className="min-w-0 break-words"
-              style={{
-                color: appearance.messageColor,
-                textShadow: "0 1px 2px rgb(0 0 0 / 85%)"
-              }}
-            >
-              {message.content}
-            </span>
+            <ChatMessageContent
+              message={message}
+              color={appearance.messageColor}
+            />
           </div>
         ))}
       </div>

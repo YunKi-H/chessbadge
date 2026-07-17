@@ -2,6 +2,7 @@ import type {
   ChatAuthorKind,
   ChatOverlayEvent,
   ChzzkBadge,
+  ChzzkEmoji,
   OverlayAppearance,
   RatingBadge
 } from "@elobadge/core";
@@ -36,17 +37,52 @@ export function parseChatOverlayEvent(data: unknown): ChatOverlayEvent | null {
   }
 
   const chzzkBadges = parseChzzkBadges(event.chzzkBadges);
+  const emojis = parseChzzkEmojis(event.emojis);
   const authorKind = parseChatAuthorKind(event.authorKind);
 
-  if (!chzzkBadges || !authorKind) {
+  if (!chzzkBadges || !emojis || !authorKind) {
     return null;
   }
 
   return {
     ...(event as ChatOverlayEvent),
     chzzkBadges,
+    emojis,
     authorKind
   };
+}
+
+function parseChzzkEmojis(value: unknown): ChzzkEmoji[] | null {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value) || value.length > 50) {
+    return null;
+  }
+
+  const emojis: ChzzkEmoji[] = [];
+
+  for (const emoji of value) {
+    if (!emoji || typeof emoji !== "object") {
+      return null;
+    }
+
+    const parsed = emoji as Partial<ChzzkEmoji>;
+
+    if (
+      typeof parsed.token !== "string" ||
+      !/^\{:[^{}]{1,100}:\}$/.test(parsed.token) ||
+      typeof parsed.imageUrl !== "string" ||
+      !isHttpsUrl(parsed.imageUrl)
+    ) {
+      return null;
+    }
+
+    emojis.push({ token: parsed.token, imageUrl: parsed.imageUrl });
+  }
+
+  return emojis;
 }
 
 export function parseOverlayAppearanceEvent(

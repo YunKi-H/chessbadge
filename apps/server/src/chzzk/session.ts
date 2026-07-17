@@ -4,6 +4,7 @@ import type { FastifyBaseLogger } from "fastify";
 import type {
   ChatOverlayEvent,
   ChzzkBadge,
+  ChzzkEmoji,
   RatingBadge
 } from "@elobadge/core";
 import type { ChzzkAuthConfig } from "../auth/chzzk/client.js";
@@ -60,6 +61,7 @@ interface SocketIoPacket {
 }
 
 const MAX_CHZZK_BADGES_PER_MESSAGE = 10;
+const MAX_CHZZK_EMOJIS_PER_MESSAGE = 50;
 
 const systemMessageSchema = z.object({
   type: z.string(),
@@ -734,6 +736,7 @@ function toChatOverlayEvent(
     content: message.content,
     rating,
     chzzkBadges: normalizeChzzkBadges(message.profile.badges),
+    emojis: normalizeChzzkEmojis(message.emojis),
     authorKind: classifyChzzkChatAuthor(message.profile),
     sentAt: new Date(message.messageTime).toISOString(),
     source: {
@@ -743,6 +746,46 @@ function toChatOverlayEvent(
       messageTime: message.messageTime
     }
   };
+}
+
+function normalizeChzzkEmojis(
+  emojis: Record<string, string> | undefined
+): ChzzkEmoji[] {
+  const normalized: ChzzkEmoji[] = [];
+
+  for (const [key, imageUrl] of Object.entries(emojis ?? {})) {
+    const token = normalizeChzzkEmojiToken(key);
+
+    if (!token || !isHttpsUrl(imageUrl)) {
+      continue;
+    }
+
+    normalized.push({ token, imageUrl });
+
+    if (normalized.length === MAX_CHZZK_EMOJIS_PER_MESSAGE) {
+      break;
+    }
+  }
+
+  return normalized;
+}
+
+function normalizeChzzkEmojiToken(key: string): string | null {
+  const trimmed = key.trim();
+
+  if (/^\{:[^{}]{1,100}:\}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (/^:[^{}]{1,100}:$/.test(trimmed)) {
+    return `{${trimmed}}`;
+  }
+
+  if (/^[^{}:]{1,100}$/.test(trimmed)) {
+    return `{:${trimmed}:}`;
+  }
+
+  return null;
 }
 
 function normalizeChzzkBadges(badges: unknown[] | undefined): ChzzkBadge[] {
