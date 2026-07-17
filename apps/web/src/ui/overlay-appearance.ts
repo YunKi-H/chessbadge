@@ -73,5 +73,9 @@ export function overlayMessageColor(
 }
 
 export function overlayFontFamily(appearance: OverlayAppearance): string {
-  return OVERLAY_FONT_FAMILIES[appearance.fontFamily];
+  return overlayFontFamilyValue(appearance.fontFamily);
+}
+
+export function overlayFontFamilyValue(fontFamily: OverlayFontFamily): string {
+  return OVERLAY_FONT_FAMILIES[fontFamily];
 }

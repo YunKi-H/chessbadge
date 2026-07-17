@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   type ChatAuthorKind,
   type ChzzkBadgeKind,
@@ -11,6 +11,7 @@ import {
 } from "@elobadge/core";
 import {
   BadgeCheck,
+  Check,
   ChevronDown,
   Clock3,
   Copy,
@@ -35,6 +36,7 @@ import {
   type OverlayAccess
 } from "../api/client";
 import { getFirebaseClientAuth } from "../firebase/client";
+import { overlayFontFamilyValue } from "./overlay-appearance";
 
 type SettingsState =
   | { status: "loading" }
@@ -112,6 +114,8 @@ const FONT_LINE_HEIGHT_OPTIONS: ReadonlyArray<OverlayFontLineHeight> = [
   1.4,
   1.6
 ];
+
+const FONT_PREVIEW_TEXT = "동해물과 백두산이 마르고 닳도록...";
 
 const CHAT_AUTHOR_KIND_OPTIONS: ReadonlyArray<{
   kind: ChatAuthorKind;
@@ -746,24 +750,12 @@ export function OverlaySettings({
               expanded={expandedSections.fonts}
               onToggle={() => toggleAppearanceSection("fonts")}
             >
-              <label className="grid gap-2 text-sm font-medium text-slate-200">
-                폰트
-                <select
-                  value={overlay.appearance.fontFamily}
-                  onChange={(event) =>
-                    updateAppearanceDraft({
-                      fontFamily: event.target.value as OverlayFontFamily
-                    })
-                  }
-                  className="h-10 rounded-md border border-white/10 bg-slate-950 px-3 text-white outline-none focus:border-emerald-400"
-                >
-                  {FONT_FAMILY_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <FontFamilySelect
+                value={overlay.appearance.fontFamily}
+                onChange={(fontFamily) =>
+                  updateAppearanceDraft({ fontFamily })
+                }
+              />
 
               <label className="grid gap-2 text-sm font-medium text-slate-200">
                 <span className="flex items-center justify-between gap-4">
@@ -913,6 +905,108 @@ function SettingsDisclosure({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function FontFamilySelect({
+  value,
+  onChange
+}: {
+  value: OverlayFontFamily;
+  onChange: (value: OverlayFontFamily) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedLabel =
+    FONT_FAMILY_OPTIONS.find((option) => option.value === value)?.label ??
+    "시스템 기본";
+
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setExpanded(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setExpanded(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [expanded]);
+
+  return (
+    <div ref={containerRef} className="relative grid gap-2">
+      <span className="text-sm font-medium text-slate-200">폰트</span>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={expanded}
+        aria-controls="overlay-font-options"
+        onClick={() => setExpanded((current) => !current)}
+        className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-left text-base text-white outline-none transition hover:border-white/25 focus-visible:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400/30"
+      >
+        <span
+          className="min-w-0 truncate"
+          style={{ fontFamily: overlayFontFamilyValue(value) }}
+        >
+          {selectedLabel} - {FONT_PREVIEW_TEXT}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          size={18}
+          className={`shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {expanded ? (
+        <div
+          id="overlay-font-options"
+          role="listbox"
+          aria-label="채팅 폰트"
+          className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-md border border-white/10 bg-slate-950 py-1 shadow-xl shadow-black/40"
+        >
+          {FONT_FAMILY_OPTIONS.map((option) => {
+            const selected = option.value === value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(option.value);
+                  setExpanded(false);
+                }}
+                className={`flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-base transition ${selected ? "bg-emerald-400/10 text-emerald-200" : "text-slate-300 hover:bg-white/5 hover:text-white"}`}
+              >
+                <span
+                  className="min-w-0 truncate"
+                  style={{ fontFamily: overlayFontFamilyValue(option.value) }}
+                >
+                  {option.label} - {FONT_PREVIEW_TEXT}
+                </span>
+                {selected ? (
+                  <Check aria-hidden="true" size={17} className="shrink-0" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
