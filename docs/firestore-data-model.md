@@ -66,6 +66,7 @@ viewer.
   chatSessionEnabled: boolean;
   tokenStatus: "active" | "reauth_required";
   tokenErrorAt: Timestamp | null;
+  disconnectedAt?: Timestamp;
   sessionUpdatedAt: Timestamp;
   overlayToken: string;
   createdAt: Timestamp;
@@ -77,6 +78,13 @@ viewer.
 WebSocket state. A manual stop sets it to `false`; server shutdown does not. On
 startup, the server restores documents where it is `true` and the token status
 is `active`.
+
+Disconnecting Chzzk first stops the live session and revokes the refresh token
+through Chzzk. Only a successful remote revoke deletes
+`chzzkTokens/{firebaseUid}` and sets `chatSessionEnabled` to false,
+`tokenStatus` to `reauth_required`, and `disconnectedAt`. A revoke or token
+decryption failure preserves the encrypted token document so the operation can
+be retried with the matching app credentials and encryption key.
 
 ### `chzzkTokens/{firebaseUid}`
 

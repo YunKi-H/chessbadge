@@ -11,6 +11,13 @@ export interface StoredChzzkTokens {
   scope: string | null;
 }
 
+export class ChzzkStoredTokenDecryptionError extends Error {
+  constructor(readonly uid: string, options?: ErrorOptions) {
+    super(`Stored Chzzk token could not be decrypted for ${uid}`, options);
+    this.name = "ChzzkStoredTokenDecryptionError";
+  }
+}
+
 export async function saveChzzkStreamerTokens(
   uid: string,
   token: ChzzkTokenResponse
@@ -46,6 +53,7 @@ export async function saveChzzkStreamerTokens(
     {
       tokenStatus: "active",
       tokenErrorAt: null,
+      disconnectedAt: null,
       updatedAt: FieldValue.serverTimestamp()
     },
     { merge: true }
@@ -78,19 +86,43 @@ export async function loadChzzkStreamerTokens(
 
   const cipher = getChzzkTokenCipher();
 
-  return {
-    accessToken: cipher.decrypt(
-      data.encryptedAccessToken,
-      encryptionContext(uid, "access")
-    ),
-    refreshToken: cipher.decrypt(
-      data.encryptedRefreshToken,
-      encryptionContext(uid, "refresh")
-    ),
-    tokenType: data.tokenType,
-    expiresAt: data.expiresAt.toDate(),
-    scope: data.scope
-  };
+  try {
+    return {
+      accessToken: cipher.decrypt(
+        data.encryptedAccessToken,
+        encryptionContext(uid, "access")
+      ),
+      refreshToken: cipher.decrypt(
+        data.encryptedRefreshToken,
+        encryptionContext(uid, "refresh")
+      ),
+      tokenType: data.tokenType,
+      expiresAt: data.expiresAt.toDate(),
+      scope: data.scope
+    };
+  } catch (error) {
+    throw new ChzzkStoredTokenDecryptionError(uid, { cause: error });
+  }
+}
+
+export async function deleteChzzkStreamerTokens(uid: string): Promise<void> {
+  const db = getFirestoreDb();
+  const batch = db.batch();
+
+  batch.delete(db.collection("chzzkTokens").doc(uid));
+  batch.set(
+    db.collection("streamers").doc(uid),
+    {
+      chatSessionEnabled: false,
+      tokenStatus: "reauth_required",
+      tokenErrorAt: null,
+      disconnectedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
+    },
+    { merge: true }
+  );
+
+  await batch.commit();
 }
 
 export async function markChzzkStreamerReauthenticationRequired(

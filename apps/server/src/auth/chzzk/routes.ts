@@ -2,15 +2,20 @@ import type { FastifyInstance } from "fastify";
 import type { ChzzkLoginMode } from "@elobadge/core";
 import { z } from "zod";
 import {
+  ChzzkTokenRequestError,
   createChzzkAuthorizationUrl,
   exchangeChzzkAuthorizationCode,
   getChzzkCurrentUser,
   getChzzkAuthConfig
 } from "./client.js";
 import { chzzkSessionService } from "../../chzzk/session-service.js";
+import { chzzkConnectionService } from "../../chzzk/connection-service.js";
 import { getWebAppUrl } from "../../config/web.js";
 import { getFirebaseAuth } from "../../firebase/admin.js";
-import { saveChzzkStreamerTokens } from "../../firebase/chzzk-tokens.js";
+import {
+  ChzzkStoredTokenDecryptionError,
+  saveChzzkStreamerTokens
+} from "../../firebase/chzzk-tokens.js";
 import { issueFirebaseLoginCode } from "../../firebase/login-exchange.js";
 import {
   registerChzzkStreamer,
@@ -155,6 +160,51 @@ export async function registerChzzkAuthRoutes(app: FastifyInstance) {
         stopped,
         session: chzzkSessionService.getStatus(user.uid)
       };
+    }
+  );
+
+  app.delete(
+    "/api/chzzk/connection",
+    {
+      preHandler: requireFirebaseUser,
+      config: {
+        rateLimit: { max: 5, timeWindow: "1 minute" }
+      }
+    },
+    async (request, reply) => {
+      const user = getRequiredFirebaseUser(request);
+
+      try {
+        const result = await chzzkConnectionService.disconnect(
+          user.uid,
+          getChzzkAuthConfig()
+        );
+
+        return { ok: true, ...result };
+      } catch (error) {
+        request.log.error(
+          { err: error, uid: user.uid },
+          "Chzzk connection disconnect failed"
+        );
+
+        if (error instanceof ChzzkStoredTokenDecryptionError) {
+          return reply.code(409).send({
+            code: "chzzk_token_decryption_failed",
+            error:
+              "저장된 치지직 토큰을 현재 암호화 키로 읽을 수 없습니다. 토큰을 저장한 환경에서 다시 시도해 주세요."
+          });
+        }
+
+        if (error instanceof ChzzkTokenRequestError) {
+          return reply.code(502).send({
+            code: "chzzk_token_revoke_failed",
+            error:
+              "치지직에서 토큰을 해제하지 못했습니다. 앱 설정과 토큰을 확인해 주세요."
+          });
+        }
+
+        throw error;
+      }
     }
   );
 }

@@ -57,6 +57,25 @@ export interface ChessComVerificationChallenge {
   expiresAt: string;
 }
 
+export async function disconnectChzzkConnection(): Promise<boolean> {
+  const response = await authenticatedFetch("/api/chzzk/connection", {
+    method: "DELETE"
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (
+    !response.ok ||
+    !body ||
+    typeof body !== "object" ||
+    (body as { ok?: unknown }).ok !== true ||
+    typeof (body as { revoked?: unknown }).revoked !== "boolean"
+  ) {
+    throw new Error(apiError(body, "치지직 연결을 해제하지 못했습니다."));
+  }
+
+  return (body as { revoked: boolean }).revoked;
+}
+
 export async function getChessComAccount(): Promise<ChessComAccount | null> {
   const response = await authenticatedFetch("/api/chess/chesscom/account");
   const body: unknown = await response.json().catch(() => null);

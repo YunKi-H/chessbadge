@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   getChzzkUserSessions,
   refreshChzzkAccessToken,
+  revokeChzzkToken,
   type ChzzkAuthConfig
 } from "./client.js";
 
@@ -46,6 +47,35 @@ test("Chzzk token refresh sends the one-time refresh token", async () => {
     assert.equal(token.accessToken, "new-access-token");
     assert.equal(token.refreshToken, "new-refresh-token");
     assert.equal(token.expiresIn, 86400);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Chzzk token revocation sends the refresh token and app credentials", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestedUrl = "";
+  let requestBody: unknown;
+
+  globalThis.fetch = async (input, init) => {
+    requestedUrl = String(input);
+    requestBody = JSON.parse(String(init?.body));
+    return new Response(null, { status: 204 });
+  };
+
+  try {
+    await revokeChzzkToken(config, "refresh-token", "refresh_token");
+
+    assert.equal(
+      requestedUrl,
+      "https://openapi.example.com/auth/v1/token/revoke"
+    );
+    assert.deepEqual(requestBody, {
+      clientId: "client-id",
+      clientSecret: "client-secret",
+      token: "refresh-token",
+      tokenTypeHint: "refresh_token"
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -69,6 +69,8 @@ export interface ChzzkUserSession {
   }>;
 }
 
+export type ChzzkTokenTypeHint = "access_token" | "refresh_token";
+
 export class ChzzkTokenRequestError extends Error {
   constructor(readonly status: number) {
     super(`Chzzk token request failed with status ${status}`);
@@ -129,6 +131,30 @@ export async function refreshChzzkAccessToken(
     clientId: config.clientId,
     clientSecret: config.clientSecret
   });
+}
+
+export async function revokeChzzkToken(
+  config: ChzzkAuthConfig,
+  token: string,
+  tokenTypeHint: ChzzkTokenTypeHint
+): Promise<void> {
+  const response = await fetch(`${config.openApiBaseUrl}/auth/v1/token/revoke`, {
+    method: "POST",
+    signal: AbortSignal.timeout(CHZZK_REQUEST_TIMEOUT_MS),
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      token,
+      tokenTypeHint
+    })
+  });
+
+  if (!response.ok) {
+    throw new ChzzkTokenRequestError(response.status);
+  }
 }
 
 async function requestChzzkToken(
