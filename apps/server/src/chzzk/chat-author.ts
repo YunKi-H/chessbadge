@@ -1,4 +1,5 @@
 import type { ChatAuthorKind } from "@elobadge/core";
+import { classifyChzzkBadge } from "./badge-classifier.js";
 
 export function classifyChzzkChatAuthor(profile: {
   userRoleCode?: string;
@@ -15,64 +16,15 @@ export function classifyChzzkChatAuthor(profile: {
     return "manager";
   }
 
-  const badges = (profile.badges ?? []).map(readBadgeIdentity);
+  const badgeKinds = (profile.badges ?? []).map(classifyChzzkBadge);
 
-  if (badges.some(isSubscriptionBadge)) {
+  if (badgeKinds.includes("subscription")) {
     return "subscriber";
   }
 
-  if (badges.some(isDonationBadge)) {
+  if (badgeKinds.includes("donation")) {
     return "donator";
   }
 
   return "viewer";
-}
-
-interface BadgeIdentity {
-  type: string | null;
-  imagePath: string | null;
-}
-
-function readBadgeIdentity(badge: unknown): BadgeIdentity {
-  if (!badge || typeof badge !== "object") {
-    return { type: null, imagePath: null };
-  }
-
-  const candidate = badge as { badgeType?: unknown; imageUrl?: unknown };
-
-  return {
-    type:
-      typeof candidate.badgeType === "string"
-        ? candidate.badgeType.toLowerCase()
-        : null,
-    imagePath: readImagePath(candidate.imageUrl)
-  };
-}
-
-function isDonationBadge(badge: BadgeIdentity): boolean {
-  return (
-    badge.type?.includes("donation") === true ||
-    /^\/static\/nng\/glive\/badge\/fan_\d+\.png$/i.test(
-      badge.imagePath ?? ""
-    )
-  );
-}
-
-function isSubscriptionBadge(badge: BadgeIdentity): boolean {
-  return (
-    badge.type?.includes("subscription") === true ||
-    badge.imagePath?.startsWith("/glive/subscription/badge/") === true
-  );
-}
-
-function readImagePath(imageUrl: unknown): string | null {
-  if (typeof imageUrl !== "string") {
-    return null;
-  }
-
-  try {
-    return new URL(imageUrl).pathname;
-  } catch {
-    return null;
-  }
 }

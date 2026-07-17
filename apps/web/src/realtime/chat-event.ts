@@ -2,6 +2,7 @@ import type {
   ChatAuthorKind,
   ChatOverlayEvent,
   ChzzkBadge,
+  ChzzkBadgeKind,
   ChzzkEmoji,
   OverlayAppearance,
   RatingBadge
@@ -219,16 +220,29 @@ function parseChzzkBadges(value: unknown): ChzzkBadge[] | null {
       return null;
     }
 
-    const imageUrl = (badge as Partial<ChzzkBadge>).imageUrl;
+    const parsed = badge as Partial<ChzzkBadge>;
+    const imageUrl = parsed.imageUrl;
+    const kind =
+      parsed.kind === undefined ? "unknown" : parseChzzkBadgeKind(parsed.kind);
 
-    if (typeof imageUrl !== "string" || !isHttpsUrl(imageUrl)) {
+    if (!kind || typeof imageUrl !== "string" || !isHttpsUrl(imageUrl)) {
       return null;
     }
 
-    badges.push({ imageUrl });
+    badges.push({ kind, imageUrl });
   }
 
   return badges;
+}
+
+function parseChzzkBadgeKind(value: unknown): ChzzkBadgeKind | null {
+  return value === "role" ||
+    value === "subscription" ||
+    value === "donation" ||
+    value === "subscription_gift" ||
+    value === "unknown"
+    ? value
+    : null;
 }
 
 function isHttpsUrl(value: string): boolean {

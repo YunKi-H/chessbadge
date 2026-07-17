@@ -120,7 +120,7 @@ test("published chat includes the sender's cached rating badge", async () => {
   const session = new ChzzkSession("streamer-a", policy, deps);
   const events: Array<{
     rating: { value: number } | null;
-    chzzkBadges?: Array<{ imageUrl: string }>;
+    chzzkBadges?: Array<{ kind: string; imageUrl: string }>;
     emojis: Array<{ token: string; imageUrl: string }>;
     authorKind: string;
   }> = [];
@@ -149,7 +149,7 @@ test("published chat includes the sender's cached rating badge", async () => {
 
   assert.equal(events[0]?.rating?.value, 1520);
   assert.deepEqual(events[0]?.chzzkBadges, [
-    { imageUrl: "https://example.com/badge.png" }
+    { kind: "subscription", imageUrl: "https://example.com/badge.png" }
   ]);
   assert.equal(events[0]?.authorKind, "subscriber");
   assert.deepEqual(events[0]?.emojis, [

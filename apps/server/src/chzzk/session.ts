@@ -17,6 +17,7 @@ import { markChzzkStreamerReauthenticationRequired } from "../firebase/chzzk-tok
 import { publishChatOverlayEvent } from "../realtime/overlay-events.js";
 import { ratingBadgeCache } from "../chess/badge-cache.js";
 import { classifyChzzkChatAuthor } from "./chat-author.js";
+import { classifyChzzkBadge } from "./badge-classifier.js";
 import { chzzkBadgeDiagnostics } from "./badge-diagnostics.js";
 import {
   defaultChzzkSessionPolicy,
@@ -803,7 +804,7 @@ function normalizeChzzkBadges(badges: unknown[] | undefined): ChzzkBadge[] {
     }
 
     seenUrls.add(imageUrl);
-    normalized.push({ imageUrl });
+    normalized.push({ kind: classifyChzzkBadge(badge), imageUrl });
 
     if (normalized.length === MAX_CHZZK_BADGES_PER_MESSAGE) {
       break;

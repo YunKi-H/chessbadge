@@ -26,7 +26,15 @@ export interface RatingBadge {
   provisional: boolean;
 }
 
+export type ChzzkBadgeKind =
+  | "role"
+  | "subscription"
+  | "donation"
+  | "subscription_gift"
+  | "unknown";
+
 export interface ChzzkBadge {
+  kind: ChzzkBadgeKind;
   imageUrl: string;
 }
 
