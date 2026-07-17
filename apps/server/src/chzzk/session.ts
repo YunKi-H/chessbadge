@@ -17,6 +17,7 @@ import { markChzzkStreamerReauthenticationRequired } from "../firebase/chzzk-tok
 import { publishChatOverlayEvent } from "../realtime/overlay-events.js";
 import { ratingBadgeCache } from "../chess/badge-cache.js";
 import { classifyChzzkChatAuthor } from "./chat-author.js";
+import { chzzkBadgeDiagnostics } from "./badge-diagnostics.js";
 import {
   defaultChzzkSessionPolicy,
   getChzzkReconnectDelay,
@@ -389,15 +390,9 @@ export class ChzzkSession implements ManagedChzzkSession {
     this.status.lastChatAt = new Date().toISOString();
     this.status.health = "healthy_active";
 
-    this.logger?.debug(
-      {
-        badgeCount: parsed.data.profile.badges?.length ?? 0,
-        badges: parsed.data.profile.badges ?? [],
-        verifiedMark: parsed.data.profile.verifiedMark ?? false,
-        userRoleCode: parsed.data.profile.userRoleCode ?? null
-      },
-      "Chzzk chat profile badge diagnostic"
-    );
+    if (this.logger) {
+      chzzkBadgeDiagnostics.record(parsed.data.profile, this.logger);
+    }
 
     this.logger?.info(
       {

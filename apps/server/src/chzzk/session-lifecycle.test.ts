@@ -105,14 +105,11 @@ test("missing sessionKey before the deadline creates a fresh session", async () 
 test("published chat includes the sender's cached rating badge", async () => {
   const sockets: FakeSocket[] = [];
   const deps = dependencies(sockets, () => {});
-  const badgeDiagnostics: Array<{ context: unknown; message?: string }> = [];
   const diagnosticLogger = {
     info() {},
     warn() {},
     error() {},
-    debug(context: unknown, message?: string) {
-      badgeDiagnostics.push({ context, message });
-    }
+    debug() {}
   } as unknown as FastifyBaseLogger;
   deps.getRatingBadge = async (channelId) => ({
     provider: "chesscom",
@@ -163,22 +160,6 @@ test("published chat includes the sender's cached rating badge", async () => {
     {
       token: "{:checkmate:}",
       imageUrl: "https://example.com/checkmate.png"
-    }
-  ]);
-  assert.deepEqual(badgeDiagnostics, [
-    {
-      context: {
-        badgeCount: 1,
-        badges: [
-          {
-            badgeType: "subscription",
-            imageUrl: "https://example.com/badge.png"
-          }
-        ],
-        verifiedMark: true,
-        userRoleCode: "common_user"
-      },
-      message: "Chzzk chat profile badge diagnostic"
     }
   ]);
   unsubscribe();
