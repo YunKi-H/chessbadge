@@ -40,7 +40,15 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
       subscriber: "#C084FC",
       viewer: "#E2E8F0"
     },
+    messageColorMode: "fixed",
     messageColor: "#FFFFFF",
+    messageRoleColors: {
+      streamer: "#86EFAC",
+      manager: "#93C5FD",
+      donator: "#FDE68A",
+      subscriber: "#D8B4FE",
+      viewer: "#FFFFFF"
+    },
     messageDurationSeconds: 20
   });
 
@@ -67,7 +75,15 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
         subscriber: "#444444",
         viewer: "#555555"
       },
+      messageColorMode: "by_role",
       messageColor: "#aabbcc",
+      messageRoleColors: {
+        streamer: "#111111",
+        manager: "#222222",
+        donator: "#333333",
+        subscriber: "#444444",
+        viewer: "#555555"
+      },
       messageDurationSeconds: 60
     }),
     {
@@ -92,7 +108,15 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
         subscriber: "#444444",
         viewer: "#555555"
       },
+      messageColorMode: "by_role",
       messageColor: "#AABBCC",
+      messageRoleColors: {
+        streamer: "#111111",
+        manager: "#222222",
+        donator: "#333333",
+        subscriber: "#444444",
+        viewer: "#555555"
+      },
       messageDurationSeconds: 60
     }
   );
@@ -117,6 +141,23 @@ test("overlay appearance fills missing badge visibility for legacy themes", () =
       donation: false,
       subscription_gift: true,
       unknown: false
+    }
+  );
+});
+
+test("legacy themes keep the fixed message color mode", () => {
+  const appearance = normalizeOverlayAppearance({ messageColor: "#123456" });
+
+  assert.equal(appearance.messageColorMode, "fixed");
+  assert.equal(appearance.messageColor, "#123456");
+  assert.deepEqual(
+    appearance.messageRoleColors,
+    {
+      streamer: "#86EFAC",
+      manager: "#93C5FD",
+      donator: "#FDE68A",
+      subscriber: "#D8B4FE",
+      viewer: "#FFFFFF"
     }
   );
 });

@@ -10,6 +10,7 @@ import {
 import { RatingBadge } from "./RatingBadge";
 import {
   overlayBackgroundColor,
+  overlayMessageColor,
   overlayNicknameColor
 } from "./overlay-appearance";
 import { ChzzkBadges } from "./ChzzkBadges";
@@ -91,7 +92,7 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
             ) : null}
             <ChatMessageContent
               message={message}
-              color={appearance.messageColor}
+              color={overlayMessageColor(appearance, message)}
             />
           </div>
         ))}

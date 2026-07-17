@@ -71,8 +71,8 @@ const CHAT_AUTHOR_KIND_OPTIONS: ReadonlyArray<{
 }> = [
   { kind: "streamer", label: "스트리머" },
   { kind: "manager", label: "매니저" },
-  { kind: "donator", label: "후원자" },
   { kind: "subscriber", label: "구독자" },
+  { kind: "donator", label: "후원자" },
   { kind: "viewer", label: "일반 시청자" }
 ];
 
@@ -185,6 +185,19 @@ export function OverlaySettings({
     updateAppearanceDraft({
       nicknameRoleColors: {
         ...overlay.appearance.nicknameRoleColors,
+        [kind]: color.toUpperCase()
+      }
+    });
+  };
+
+  const updateMessageRoleColor = (kind: ChatAuthorKind, color: string) => {
+    if (!overlay) {
+      return;
+    }
+
+    updateAppearanceDraft({
+      messageRoleColors: {
+        ...overlay.appearance.messageRoleColors,
         [kind]: color.toUpperCase()
       }
     });
@@ -589,32 +602,82 @@ export function OverlaySettings({
                 <legend className="mb-3 text-sm font-medium text-slate-200">
                   메시지 색상
                 </legend>
-                <div className="flex flex-wrap items-center gap-2">
-                  {MESSAGE_COLOR_SWATCHES.map((color) => (
+                <div className="inline-flex rounded-md bg-slate-950 p-1 ring-1 ring-white/10">
+                  {([
+                    ["fixed", "단일 색상"],
+                    ["by_role", "유형별"]
+                  ] as const).map(([mode, label]) => (
                     <button
-                      key={color}
+                      key={mode}
                       type="button"
-                      title={color}
-                      aria-label={`메시지 색상 ${color}`}
-                      aria-pressed={overlay.appearance.messageColor === color}
-                      onClick={() => updateAppearanceDraft({ messageColor: color })}
-                      className={`size-8 rounded-md border transition ${overlay.appearance.messageColor === color ? "border-emerald-400 ring-2 ring-emerald-400/30" : "border-white/20"}`}
-                      style={{ backgroundColor: color }}
-                    />
+                      aria-pressed={overlay.appearance.messageColorMode === mode}
+                      onClick={() =>
+                        updateAppearanceDraft({ messageColorMode: mode })
+                      }
+                      className={`h-8 rounded px-3 text-sm font-medium transition ${overlay.appearance.messageColorMode === mode ? "bg-emerald-500 text-slate-950" : "text-slate-300 hover:text-white"}`}
+                    >
+                      {label}
+                    </button>
                   ))}
-                  <input
-                    type="color"
-                    title="직접 색상 선택"
-                    aria-label="직접 메시지 색상 선택"
-                    value={overlay.appearance.messageColor}
-                    onChange={(event) =>
-                      updateAppearanceDraft({
-                        messageColor: event.target.value.toUpperCase()
-                      })
-                    }
-                    className="size-8 cursor-pointer rounded-md border border-white/20 bg-transparent p-0.5"
-                  />
                 </div>
+
+                {overlay.appearance.messageColorMode === "fixed" ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {MESSAGE_COLOR_SWATCHES.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        title={color}
+                        aria-label={`메시지 색상 ${color}`}
+                        aria-pressed={overlay.appearance.messageColor === color}
+                        onClick={() =>
+                          updateAppearanceDraft({ messageColor: color })
+                        }
+                        className={`size-8 rounded-md border transition ${overlay.appearance.messageColor === color ? "border-emerald-400 ring-2 ring-emerald-400/30" : "border-white/20"}`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      title="직접 색상 선택"
+                      aria-label="직접 메시지 색상 선택"
+                      value={overlay.appearance.messageColor}
+                      onChange={(event) =>
+                        updateAppearanceDraft({
+                          messageColor: event.target.value.toUpperCase()
+                        })
+                      }
+                      className="size-8 cursor-pointer rounded-md border border-white/20 bg-transparent p-0.5"
+                    />
+                  </div>
+                ) : null}
+
+                {overlay.appearance.messageColorMode === "by_role" ? (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {CHAT_AUTHOR_KIND_OPTIONS.map(({ kind, label }) => (
+                      <label
+                        key={kind}
+                        className="flex h-10 items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950 px-3 text-sm text-slate-300"
+                      >
+                        {label}
+                        <span className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-slate-500">
+                            {overlay.appearance.messageRoleColors[kind]}
+                          </span>
+                          <input
+                            type="color"
+                            aria-label={`${label} 메시지 색상`}
+                            value={overlay.appearance.messageRoleColors[kind]}
+                            onChange={(event) =>
+                              updateMessageRoleColor(kind, event.target.value)
+                            }
+                            className="size-7 cursor-pointer rounded border border-white/20 bg-transparent p-0.5"
+                          />
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
               </fieldset>
 
               <div className="flex flex-wrap gap-2">

@@ -1,5 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import type { ChatOverlayEvent, OverlayAppearance } from "@elobadge/core";
+import {
+  DEFAULT_OVERLAY_APPEARANCE,
+  type ChatOverlayEvent,
+  type OverlayAppearance
+} from "@elobadge/core";
 import { z } from "zod";
 import { getRequiredFirebaseUser, requireFirebaseUser } from "../auth/firebase.js";
 import { getWebAppUrl } from "../config/web.js";
@@ -57,7 +61,15 @@ const overlayAppearanceSchema = z.object({
     subscriber: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
     viewer: z.string().regex(/^#[0-9A-Fa-f]{6}$/)
   }),
+  messageColorMode: z.enum(["fixed", "by_role"]).default("fixed"),
   messageColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  messageRoleColors: z.object({
+    streamer: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    manager: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    donator: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    subscriber: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    viewer: z.string().regex(/^#[0-9A-Fa-f]{6}$/)
+  }).default(DEFAULT_OVERLAY_APPEARANCE.messageRoleColors),
   messageDurationSeconds: z.union([
     z.literal(0),
     z.literal(10),
@@ -156,7 +168,12 @@ export async function registerOverlayRoutes(app: FastifyInstance) {
             ([kind, color]) => [kind, color.toUpperCase()]
           )
         ) as OverlayAppearance["nicknameRoleColors"],
-        messageColor: parsedAppearance.data.messageColor.toUpperCase()
+        messageColor: parsedAppearance.data.messageColor.toUpperCase(),
+        messageRoleColors: Object.fromEntries(
+          Object.entries(parsedAppearance.data.messageRoleColors).map(
+            ([kind, color]) => [kind, color.toUpperCase()]
+          )
+        ) as OverlayAppearance["messageRoleColors"]
       };
 
       try {

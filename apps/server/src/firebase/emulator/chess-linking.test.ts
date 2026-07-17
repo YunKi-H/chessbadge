@@ -197,7 +197,15 @@ test("overlay appearance persists and survives public token rotation", async () 
       subscriber: "#C084FC",
       viewer: "#E2E8F0"
     },
+    messageColorMode: "fixed",
     messageColor: "#FFFFFF",
+    messageRoleColors: {
+      streamer: "#86EFAC",
+      manager: "#93C5FD",
+      donator: "#FDE68A",
+      subscriber: "#D8B4FE",
+      viewer: "#FFFFFF"
+    },
     messageDurationSeconds: 20
   });
 
@@ -223,7 +231,15 @@ test("overlay appearance persists and survives public token rotation", async () 
       subscriber: "#C084FC",
       viewer: "#E2E8F0"
     },
+    messageColorMode: "by_role" as const,
     messageColor: "#7DD3FC",
+    messageRoleColors: {
+      streamer: "#86EFAC",
+      manager: "#93C5FD",
+      donator: "#FDE68A",
+      subscriber: "#D8B4FE",
+      viewer: "#FFFFFF"
+    },
     messageDurationSeconds: 60 as const
   };
   await updateStreamerOverlayAppearance(uid, appearance);

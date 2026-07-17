@@ -11,6 +11,7 @@ import { parseChatOverlayEvent } from "../realtime/chat-event";
 import { RatingBadge } from "./RatingBadge";
 import {
   overlayBackgroundColor,
+  overlayMessageColor,
   overlayNicknameColor
 } from "./overlay-appearance";
 import { ChzzkBadges } from "./ChzzkBadges";
@@ -126,7 +127,7 @@ export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }
               ) : null}
               <ChatMessageContent
                 message={message}
-                color={appearance.messageColor}
+                color={overlayMessageColor(appearance, message)}
               />
             </div>
           ))}
@@ -172,8 +173,8 @@ export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }
           >
             <option value="streamer">스트리머</option>
             <option value="manager">매니저</option>
-            <option value="donator">후원자</option>
             <option value="subscriber">구독자</option>
+            <option value="donator">후원자</option>
             <option value="viewer">일반 시청자</option>
           </select>
         </label>

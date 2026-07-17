@@ -48,3 +48,12 @@ export function overlayNicknameColor(
 
   return USER_NICKNAME_COLORS[hash % USER_NICKNAME_COLORS.length]!;
 }
+
+export function overlayMessageColor(
+  appearance: OverlayAppearance,
+  message: ChatOverlayEvent
+): string {
+  return appearance.messageColorMode === "by_role"
+    ? appearance.messageRoleColors[message.authorKind]
+    : appearance.messageColor;
+}

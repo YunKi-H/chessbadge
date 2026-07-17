@@ -197,11 +197,19 @@ export function normalizeOverlayAppearance(value: unknown): OverlayAppearance {
     nicknameRoleColors: normalizeNicknameRoleColors(
       appearance.nicknameRoleColors
     ),
+    messageColorMode:
+      appearance.messageColorMode === "fixed" ||
+      appearance.messageColorMode === "by_role"
+        ? appearance.messageColorMode
+        : DEFAULT_OVERLAY_APPEARANCE.messageColorMode,
     messageColor:
       typeof appearance.messageColor === "string" &&
       /^#[0-9A-Fa-f]{6}$/.test(appearance.messageColor)
         ? appearance.messageColor.toUpperCase()
         : DEFAULT_OVERLAY_APPEARANCE.messageColor,
+    messageRoleColors: normalizeMessageRoleColors(
+      appearance.messageRoleColors
+    ),
     messageDurationSeconds:
       appearance.messageDurationSeconds === 0 ||
       appearance.messageDurationSeconds === 10 ||
@@ -211,6 +219,15 @@ export function normalizeOverlayAppearance(value: unknown): OverlayAppearance {
         ? appearance.messageDurationSeconds
         : DEFAULT_OVERLAY_APPEARANCE.messageDurationSeconds
   };
+}
+
+function normalizeMessageRoleColors(
+  value: unknown
+): OverlayAppearance["messageRoleColors"] {
+  return normalizeRoleColors(
+    value,
+    DEFAULT_OVERLAY_APPEARANCE.messageRoleColors
+  );
 }
 
 function normalizeChzzkBadgeVisibility(
@@ -236,13 +253,23 @@ function normalizeChzzkBadgeVisibility(
 function normalizeNicknameRoleColors(
   value: unknown
 ): OverlayAppearance["nicknameRoleColors"] {
+  return normalizeRoleColors(
+    value,
+    DEFAULT_OVERLAY_APPEARANCE.nicknameRoleColors
+  );
+}
+
+function normalizeRoleColors<T extends Record<string, string>>(
+  value: unknown,
+  defaults: T
+): T {
   const colors: Record<string, unknown> =
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
       : {};
 
   return Object.fromEntries(
-    Object.entries(DEFAULT_OVERLAY_APPEARANCE.nicknameRoleColors).map(
+    Object.entries(defaults).map(
       ([kind, defaultColor]) => {
         const color = colors[kind];
         return [
@@ -253,7 +280,7 @@ function normalizeNicknameRoleColors(
         ];
       }
     )
-  ) as OverlayAppearance["nicknameRoleColors"];
+  ) as T;
 }
 
 async function createOrRotateOverlayAccess(

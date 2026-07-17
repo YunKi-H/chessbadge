@@ -4,6 +4,8 @@ export type ChzzkLoginMode = "streamer" | "viewer";
 
 export type NicknameColorMode = "fixed" | "by_user" | "by_role";
 
+export type MessageColorMode = "fixed" | "by_role";
+
 export type ChatAuthorKind =
   | "streamer"
   | "manager"
@@ -72,7 +74,9 @@ export interface OverlayAppearance {
   nicknameColorMode: NicknameColorMode;
   nicknameColor: string;
   nicknameRoleColors: ChatAuthorColors;
+  messageColorMode: MessageColorMode;
   messageColor: string;
+  messageRoleColors: ChatAuthorColors;
   messageDurationSeconds: OverlayMessageDurationSeconds;
 }
 
@@ -98,6 +102,14 @@ export const DEFAULT_OVERLAY_APPEARANCE: OverlayAppearance = {
     subscriber: "#C084FC",
     viewer: "#E2E8F0"
   },
+  messageColorMode: "fixed",
   messageColor: "#FFFFFF",
+  messageRoleColors: {
+    streamer: "#86EFAC",
+    manager: "#93C5FD",
+    donator: "#FDE68A",
+    subscriber: "#D8B4FE",
+    viewer: "#FFFFFF"
+  },
   messageDurationSeconds: 20
 };

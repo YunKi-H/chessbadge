@@ -56,7 +56,15 @@ test("overlay appearance updates are scoped to one public token", () => {
       subscriber: "#C084FC",
       viewer: "#E2E8F0"
     },
+    messageColorMode: "by_role",
     messageColor: "#00FF00",
+    messageRoleColors: {
+      streamer: "#86EFAC",
+      manager: "#93C5FD",
+      donator: "#FDE68A",
+      subscriber: "#D8B4FE",
+      viewer: "#FFFFFF"
+    },
     messageDurationSeconds: 20
   });
   unsubscribeFirst();

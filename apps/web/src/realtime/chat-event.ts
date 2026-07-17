@@ -123,9 +123,12 @@ export function parseOverlayAppearanceEvent(
       appearance.nicknameColorMode !== "by_role") ||
     typeof appearance.nicknameColor !== "string" ||
     !/^#[0-9A-Fa-f]{6}$/.test(appearance.nicknameColor) ||
-    !isNicknameRoleColors(appearance.nicknameRoleColors) ||
+    !isChatAuthorColors(appearance.nicknameRoleColors) ||
+    (appearance.messageColorMode !== "fixed" &&
+      appearance.messageColorMode !== "by_role") ||
     typeof appearance.messageColor !== "string" ||
     !/^#[0-9A-Fa-f]{6}$/.test(appearance.messageColor) ||
+    !isChatAuthorColors(appearance.messageRoleColors) ||
     (appearance.messageDurationSeconds !== 0 &&
       appearance.messageDurationSeconds !== 10 &&
       appearance.messageDurationSeconds !== 20 &&
@@ -151,7 +154,15 @@ export function parseOverlayAppearanceEvent(
       subscriber: appearance.nicknameRoleColors.subscriber.toUpperCase(),
       viewer: appearance.nicknameRoleColors.viewer.toUpperCase()
     },
+    messageColorMode: appearance.messageColorMode,
     messageColor: appearance.messageColor.toUpperCase(),
+    messageRoleColors: {
+      streamer: appearance.messageRoleColors.streamer.toUpperCase(),
+      manager: appearance.messageRoleColors.manager.toUpperCase(),
+      donator: appearance.messageRoleColors.donator.toUpperCase(),
+      subscriber: appearance.messageRoleColors.subscriber.toUpperCase(),
+      viewer: appearance.messageRoleColors.viewer.toUpperCase()
+    },
     messageDurationSeconds: appearance.messageDurationSeconds
   };
 }
@@ -186,7 +197,7 @@ function parseChatAuthorKind(value: unknown): ChatAuthorKind | null {
     : null;
 }
 
-function isNicknameRoleColors(
+function isChatAuthorColors(
   value: unknown
 ): value is OverlayAppearance["nicknameRoleColors"] {
   if (!value || typeof value !== "object") {
