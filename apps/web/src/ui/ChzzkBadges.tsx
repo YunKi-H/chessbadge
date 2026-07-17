@@ -17,7 +17,7 @@ export function ChzzkBadges({
 
   return (
     <span
-      className="flex shrink-0 items-center gap-1"
+      className="mr-[0.45em] inline-flex items-center gap-1 align-top"
       style={{ height: `${lineHeight}em` }}
       aria-label="치지직 배지"
     >

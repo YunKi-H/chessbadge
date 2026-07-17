@@ -104,7 +104,7 @@ export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex w-fit max-w-full min-w-0 shrink-0 items-start gap-2 rounded-md ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/10" : "p-0"}`}
+              className={`w-fit max-w-full min-w-0 shrink-0 rounded-md ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/10" : "p-0"}`}
               style={{
                 backgroundColor: overlayBackgroundColor(appearance),
                 fontFamily: overlayFontFamily(appearance),
@@ -128,7 +128,7 @@ export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }
               ) : null}
               {appearance.nicknameVisible ? (
                 <span
-                  className="max-w-40 shrink-0 truncate"
+                  className="mr-[0.45em]"
                   style={{ color: overlayNicknameColor(appearance, message) }}
                 >
                   {message.nickname}:

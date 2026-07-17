@@ -69,7 +69,7 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`overlay-message flex w-fit max-w-full shrink-0 items-start gap-2 rounded-md ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/15" : "p-0"}`}
+            className={`overlay-message w-fit max-w-full shrink-0 rounded-md ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/15" : "p-0"}`}
             style={{
               backgroundColor: overlayBackgroundColor(appearance),
               fontFamily: overlayFontFamily(appearance),
@@ -93,7 +93,7 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
             ) : null}
             {appearance.nicknameVisible ? (
               <span
-                className="shrink-0"
+                className="mr-[0.45em]"
                 style={{ color: overlayNicknameColor(appearance, message) }}
               >
                 {message.nickname}:
