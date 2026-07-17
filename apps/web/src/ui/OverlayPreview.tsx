@@ -117,10 +117,14 @@ export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }
                 <ChzzkBadges
                   badges={message.chzzkBadges}
                   visibility={appearance.chzzkBadgeVisibility}
+                  lineHeight={appearance.fontLineHeight}
                 />
               ) : null}
               {message.rating ? (
-                <RatingBadge rating={message.rating} />
+                <RatingBadge
+                  rating={message.rating}
+                  lineHeight={appearance.fontLineHeight}
+                />
               ) : null}
               {appearance.nicknameVisible ? (
                 <span

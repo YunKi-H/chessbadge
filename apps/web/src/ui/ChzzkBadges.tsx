@@ -2,10 +2,12 @@ import type { ChzzkBadge, ChzzkBadgeVisibility } from "@elobadge/core";
 
 export function ChzzkBadges({
   badges,
-  visibility
+  visibility,
+  lineHeight
 }: {
   badges: ChzzkBadge[] | undefined;
   visibility: ChzzkBadgeVisibility;
+  lineHeight: number;
 }) {
   const visibleBadges = badges?.filter((badge) => visibility[badge.kind]);
 
@@ -15,7 +17,8 @@ export function ChzzkBadges({
 
   return (
     <span
-      className="mt-0.5 flex shrink-0 items-center gap-1"
+      className="flex shrink-0 items-center gap-1"
+      style={{ height: `${lineHeight}em` }}
       aria-label="치지직 배지"
     >
       {visibleBadges.map((badge) => (
