@@ -55,14 +55,17 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
   }, [addMessage, clearMessages, publicToken]);
 
   return (
-    <main className="flex min-h-screen items-end bg-transparent p-6" aria-live="polite">
+    <main
+      className="flex h-screen items-end overflow-hidden bg-transparent p-6"
+      aria-live="polite"
+    >
       <div
-        className={`w-full max-w-[600px] ${appearance.backgroundVisible ? "space-y-2" : "space-y-1"}`}
+        className={`flex max-h-full w-full max-w-[600px] flex-col justify-end overflow-hidden ${appearance.backgroundVisible ? "gap-2" : "gap-1"}`}
       >
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`overlay-message flex w-fit max-w-full items-start gap-2 rounded-md text-lg ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/15" : "p-0"}`}
+            className={`overlay-message flex w-fit max-w-full shrink-0 items-start gap-2 rounded-md text-lg ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/15" : "p-0"}`}
             style={{
               backgroundColor: overlayBackgroundColor(appearance)
             }}
