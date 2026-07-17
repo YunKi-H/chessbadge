@@ -116,6 +116,7 @@ export function parseOverlayAppearanceEvent(
     appearance.backgroundOpacity < 0 ||
     appearance.backgroundOpacity > 100 ||
     typeof appearance.chzzkBadgesVisible !== "boolean" ||
+    !isChzzkBadgeVisibility(appearance.chzzkBadgeVisibility) ||
     typeof appearance.nicknameVisible !== "boolean" ||
     (appearance.nicknameColorMode !== "fixed" &&
       appearance.nicknameColorMode !== "by_user" &&
@@ -139,6 +140,7 @@ export function parseOverlayAppearanceEvent(
     backgroundColor: appearance.backgroundColor.toUpperCase(),
     backgroundOpacity: appearance.backgroundOpacity,
     chzzkBadgesVisible: appearance.chzzkBadgesVisible,
+    chzzkBadgeVisibility: { ...appearance.chzzkBadgeVisibility },
     nicknameVisible: appearance.nicknameVisible,
     nicknameColorMode: appearance.nicknameColorMode,
     nicknameColor: appearance.nicknameColor.toUpperCase(),
@@ -152,6 +154,26 @@ export function parseOverlayAppearanceEvent(
     messageColor: appearance.messageColor.toUpperCase(),
     messageDurationSeconds: appearance.messageDurationSeconds
   };
+}
+
+function isChzzkBadgeVisibility(
+  value: unknown
+): value is OverlayAppearance["chzzkBadgeVisibility"] {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const visibility = value as Partial<
+    OverlayAppearance["chzzkBadgeVisibility"]
+  >;
+
+  return [
+    visibility.role,
+    visibility.subscription,
+    visibility.donation,
+    visibility.subscription_gift,
+    visibility.unknown
+  ].every((visible) => typeof visible === "boolean");
 }
 
 function parseChatAuthorKind(value: unknown): ChatAuthorKind | null {

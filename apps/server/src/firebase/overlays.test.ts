@@ -23,6 +23,13 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
     backgroundColor: "#020617",
     backgroundOpacity: 90,
     chzzkBadgesVisible: true,
+    chzzkBadgeVisibility: {
+      role: true,
+      subscription: true,
+      donation: true,
+      subscription_gift: true,
+      unknown: true
+    },
     nicknameVisible: true,
     nicknameColorMode: "fixed",
     nicknameColor: "#7DD3FC",
@@ -43,6 +50,13 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
       backgroundColor: "#abcdef",
       backgroundOpacity: 35,
       chzzkBadgesVisible: false,
+      chzzkBadgeVisibility: {
+        role: false,
+        subscription: true,
+        donation: false,
+        subscription_gift: true,
+        unknown: false
+      },
       nicknameVisible: false,
       nicknameColorMode: "by_user",
       nicknameColor: "#fedcba",
@@ -61,6 +75,13 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
       backgroundColor: "#ABCDEF",
       backgroundOpacity: 35,
       chzzkBadgesVisible: false,
+      chzzkBadgeVisibility: {
+        role: false,
+        subscription: true,
+        donation: false,
+        subscription_gift: true,
+        unknown: false
+      },
       nicknameVisible: false,
       nicknameColorMode: "by_user",
       nicknameColor: "#FEDCBA",
@@ -73,6 +94,29 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
       },
       messageColor: "#AABBCC",
       messageDurationSeconds: 60
+    }
+  );
+});
+
+test("overlay appearance fills missing badge visibility for legacy themes", () => {
+  assert.deepEqual(normalizeOverlayAppearance({}).chzzkBadgeVisibility, {
+    role: true,
+    subscription: true,
+    donation: true,
+    subscription_gift: true,
+    unknown: true
+  });
+
+  assert.deepEqual(
+    normalizeOverlayAppearance({
+      chzzkBadgeVisibility: { donation: false, unknown: false }
+    }).chzzkBadgeVisibility,
+    {
+      role: true,
+      subscription: true,
+      donation: false,
+      subscription_gift: true,
+      unknown: false
     }
   );
 });

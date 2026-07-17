@@ -124,6 +124,13 @@ token fields. The current in-process refresh lock assumes one ECS server task.
     backgroundColor: string; // #RRGGBB
     backgroundOpacity: number; // integer from 0 through 100
     chzzkBadgesVisible: boolean;
+    chzzkBadgeVisibility: {
+      role: boolean;
+      subscription: boolean;
+      donation: boolean;
+      subscription_gift: boolean;
+      unknown: boolean;
+    };
     nicknameVisible: boolean;
     nicknameColorMode: "fixed" | "by_user" | "by_role";
     nicknameColor: string; // #RRGGBB, used by fixed mode

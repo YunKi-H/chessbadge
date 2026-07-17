@@ -288,6 +288,7 @@ function isOverlayAppearance(value: unknown): value is OverlayAppearance {
     appearance.backgroundOpacity >= 0 &&
     appearance.backgroundOpacity <= 100 &&
     typeof appearance.chzzkBadgesVisible === "boolean" &&
+    isChzzkBadgeVisibility(appearance.chzzkBadgeVisibility) &&
     typeof appearance.nicknameVisible === "boolean" &&
     (appearance.nicknameColorMode === "fixed" ||
       appearance.nicknameColorMode === "by_user" ||
@@ -303,6 +304,26 @@ function isOverlayAppearance(value: unknown): value is OverlayAppearance {
       appearance.messageDurationSeconds === 30 ||
       appearance.messageDurationSeconds === 60)
   );
+}
+
+function isChzzkBadgeVisibility(
+  value: unknown
+): value is OverlayAppearance["chzzkBadgeVisibility"] {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const visibility = value as Partial<
+    OverlayAppearance["chzzkBadgeVisibility"]
+  >;
+
+  return [
+    visibility.role,
+    visibility.subscription,
+    visibility.donation,
+    visibility.subscription_gift,
+    visibility.unknown
+  ].every((visible) => typeof visible === "boolean");
 }
 
 function isNicknameRoleColors(

@@ -34,6 +34,19 @@ const overlayAppearanceSchema = z.object({
   backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   backgroundOpacity: z.number().int().min(0).max(100),
   chzzkBadgesVisible: z.boolean().default(true),
+  chzzkBadgeVisibility: z.object({
+    role: z.boolean(),
+    subscription: z.boolean(),
+    donation: z.boolean(),
+    subscription_gift: z.boolean(),
+    unknown: z.boolean()
+  }).default({
+    role: true,
+    subscription: true,
+    donation: true,
+    subscription_gift: true,
+    unknown: true
+  }),
   nicknameVisible: z.boolean(),
   nicknameColorMode: z.enum(["fixed", "by_user", "by_role"]),
   nicknameColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),

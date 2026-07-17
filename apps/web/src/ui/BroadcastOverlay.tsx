@@ -73,7 +73,10 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
             }}
           >
             {appearance.chzzkBadgesVisible ? (
-              <ChzzkBadges badges={message.chzzkBadges} />
+              <ChzzkBadges
+                badges={message.chzzkBadges}
+                visibility={appearance.chzzkBadgeVisibility}
+              />
             ) : null}
             {message.rating ? (
               <RatingBadge rating={message.rating} />

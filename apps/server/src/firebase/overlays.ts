@@ -176,6 +176,9 @@ export function normalizeOverlayAppearance(value: unknown): OverlayAppearance {
       typeof appearance.chzzkBadgesVisible === "boolean"
         ? appearance.chzzkBadgesVisible
         : DEFAULT_OVERLAY_APPEARANCE.chzzkBadgesVisible,
+    chzzkBadgeVisibility: normalizeChzzkBadgeVisibility(
+      appearance.chzzkBadgeVisibility
+    ),
     nicknameVisible:
       typeof appearance.nicknameVisible === "boolean"
         ? appearance.nicknameVisible
@@ -208,6 +211,26 @@ export function normalizeOverlayAppearance(value: unknown): OverlayAppearance {
         ? appearance.messageDurationSeconds
         : DEFAULT_OVERLAY_APPEARANCE.messageDurationSeconds
   };
+}
+
+function normalizeChzzkBadgeVisibility(
+  value: unknown
+): OverlayAppearance["chzzkBadgeVisibility"] {
+  const visibility: Record<string, unknown> =
+    value && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : {};
+
+  return Object.fromEntries(
+    Object.entries(DEFAULT_OVERLAY_APPEARANCE.chzzkBadgeVisibility).map(
+      ([kind, defaultVisible]) => [
+        kind,
+        typeof visibility[kind] === "boolean"
+          ? visibility[kind]
+          : defaultVisible
+      ]
+    )
+  ) as OverlayAppearance["chzzkBadgeVisibility"];
 }
 
 function normalizeNicknameRoleColors(

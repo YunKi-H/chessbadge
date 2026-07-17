@@ -180,6 +180,13 @@ test("overlay appearance persists and survives public token rotation", async () 
     backgroundColor: "#020617",
     backgroundOpacity: 90,
     chzzkBadgesVisible: true,
+    chzzkBadgeVisibility: {
+      role: true,
+      subscription: true,
+      donation: true,
+      subscription_gift: true,
+      unknown: true
+    },
     nicknameVisible: true,
     nicknameColorMode: "fixed",
     nicknameColor: "#7DD3FC",
@@ -199,6 +206,13 @@ test("overlay appearance persists and survives public token rotation", async () 
     backgroundColor: "#172554",
     backgroundOpacity: 45,
     chzzkBadgesVisible: false,
+    chzzkBadgeVisibility: {
+      role: false,
+      subscription: true,
+      donation: false,
+      subscription_gift: true,
+      unknown: false
+    },
     nicknameVisible: false,
     nicknameColorMode: "by_user" as const,
     nicknameColor: "#FDE047",

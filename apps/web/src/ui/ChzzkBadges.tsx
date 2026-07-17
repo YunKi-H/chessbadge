@@ -1,7 +1,15 @@
-import type { ChzzkBadge } from "@elobadge/core";
+import type { ChzzkBadge, ChzzkBadgeVisibility } from "@elobadge/core";
 
-export function ChzzkBadges({ badges }: { badges: ChzzkBadge[] | undefined }) {
-  if (!badges?.length) {
+export function ChzzkBadges({
+  badges,
+  visibility
+}: {
+  badges: ChzzkBadge[] | undefined;
+  visibility: ChzzkBadgeVisibility;
+}) {
+  const visibleBadges = badges?.filter((badge) => visibility[badge.kind]);
+
+  if (!visibleBadges?.length) {
     return null;
   }
 
@@ -10,7 +18,7 @@ export function ChzzkBadges({ badges }: { badges: ChzzkBadge[] | undefined }) {
       className="mt-0.5 flex shrink-0 items-center gap-1"
       aria-label="치지직 배지"
     >
-      {badges.map((badge) => (
+      {visibleBadges.map((badge) => (
         <img
           key={badge.imageUrl}
           src={badge.imageUrl}

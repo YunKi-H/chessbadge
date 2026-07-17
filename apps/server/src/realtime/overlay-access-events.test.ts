@@ -39,6 +39,13 @@ test("overlay appearance updates are scoped to one public token", () => {
     backgroundColor: "#020617",
     backgroundOpacity: 75,
     chzzkBadgesVisible: false,
+    chzzkBadgeVisibility: {
+      role: true,
+      subscription: false,
+      donation: true,
+      subscription_gift: false,
+      unknown: true
+    },
     nicknameVisible: false,
     nicknameColorMode: "by_user",
     nicknameColor: "#7DD3FC",

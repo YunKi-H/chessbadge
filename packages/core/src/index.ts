@@ -33,6 +33,8 @@ export type ChzzkBadgeKind =
   | "subscription_gift"
   | "unknown";
 
+export type ChzzkBadgeVisibility = Record<ChzzkBadgeKind, boolean>;
+
 export interface ChzzkBadge {
   kind: ChzzkBadgeKind;
   imageUrl: string;
@@ -65,6 +67,7 @@ export interface OverlayAppearance {
   backgroundColor: string;
   backgroundOpacity: number;
   chzzkBadgesVisible: boolean;
+  chzzkBadgeVisibility: ChzzkBadgeVisibility;
   nicknameVisible: boolean;
   nicknameColorMode: NicknameColorMode;
   nicknameColor: string;
@@ -78,6 +81,13 @@ export const DEFAULT_OVERLAY_APPEARANCE: OverlayAppearance = {
   backgroundColor: "#020617",
   backgroundOpacity: 90,
   chzzkBadgesVisible: true,
+  chzzkBadgeVisibility: {
+    role: true,
+    subscription: true,
+    donation: true,
+    subscription_gift: true,
+    unknown: true
+  },
   nicknameVisible: true,
   nicknameColorMode: "fixed",
   nicknameColor: "#7DD3FC",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   type ChatAuthorKind,
+  type ChzzkBadgeKind,
   DEFAULT_OVERLAY_APPEARANCE,
   type OverlayAppearance,
   type OverlayMessageDurationSeconds
@@ -73,6 +74,17 @@ const CHAT_AUTHOR_KIND_OPTIONS: ReadonlyArray<{
   { kind: "donator", label: "후원자" },
   { kind: "subscriber", label: "구독자" },
   { kind: "viewer", label: "일반 시청자" }
+];
+
+const CHZZK_BADGE_KIND_OPTIONS: ReadonlyArray<{
+  kind: ChzzkBadgeKind;
+  label: string;
+}> = [
+  { kind: "role", label: "스트리머·매니저" },
+  { kind: "subscription", label: "구독" },
+  { kind: "donation", label: "후원" },
+  { kind: "subscription_gift", label: "구독 선물" },
+  { kind: "unknown", label: "기타" }
 ];
 
 export function OverlaySettings({
@@ -174,6 +186,19 @@ export function OverlaySettings({
       nicknameRoleColors: {
         ...overlay.appearance.nicknameRoleColors,
         [kind]: color.toUpperCase()
+      }
+    });
+  };
+
+  const updateBadgeVisibility = (kind: ChzzkBadgeKind, visible: boolean) => {
+    if (!overlay) {
+      return;
+    }
+
+    updateAppearanceDraft({
+      chzzkBadgeVisibility: {
+        ...overlay.appearance.chzzkBadgeVisibility,
+        [kind]: visible
       }
     });
   };
@@ -344,7 +369,7 @@ export function OverlaySettings({
                 </label>
 
                 <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
-                  치지직 배지 표시
+                  치지직 배지 전체 표시
                   <input
                     type="checkbox"
                     checked={overlay.appearance.chzzkBadgesVisible}
@@ -356,6 +381,35 @@ export function OverlaySettings({
                     className="size-4 accent-emerald-500"
                   />
                 </label>
+
+                <fieldset
+                  disabled={!overlay.appearance.chzzkBadgesVisible}
+                  className="disabled:opacity-40"
+                >
+                  <legend className="mb-3 text-sm font-medium text-slate-200">
+                    표시할 배지
+                  </legend>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {CHZZK_BADGE_KIND_OPTIONS.map(({ kind, label }) => (
+                      <label
+                        key={kind}
+                        className="flex h-10 items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950 px-3 text-sm text-slate-300"
+                      >
+                        {label}
+                        <input
+                          type="checkbox"
+                          checked={
+                            overlay.appearance.chzzkBadgeVisibility[kind]
+                          }
+                          onChange={(event) =>
+                            updateBadgeVisibility(kind, event.target.checked)
+                          }
+                          className="size-4 accent-emerald-500"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
 
               <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
                 채팅 배경
