@@ -44,7 +44,7 @@ export async function disconnectChessComAccount(
     const accountId = userSnapshot.data()?.chessAccountIds?.chesscom;
 
     if (typeof accountId !== "string") {
-      return false;
+      return true;
     }
 
     const accountRef = db.collection("chessAccounts").doc(accountId);

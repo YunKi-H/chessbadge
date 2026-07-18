@@ -148,6 +148,8 @@ test("Chess.com verification selects the highest badge and disconnect clears it"
   assert.equal(detachedAccount.data()?.uid, null);
   assert.equal(detachedAccount.data()?.selectedSpeed, null);
   assert.equal(detachedAccount.data()?.verifiedAt, null);
+
+  assert.equal(await disconnectChessComAccount(uid, channelId), true);
 });
 
 test("one Chess.com account cannot be linked to two Chzzk users", async () => {
