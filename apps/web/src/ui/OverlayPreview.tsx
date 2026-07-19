@@ -100,13 +100,13 @@ export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }
         ) : null}
         <div
           className={`flex min-h-0 w-full flex-col justify-end overflow-hidden ${appearance.backgroundVisible ? "gap-2" : "gap-1"}`}
+          style={{ maxWidth: `${appearance.messageMaxWidthPx}px` }}
         >
           {messages.map((message) => (
             <div
               key={message.id}
               className={`w-fit max-w-full min-w-0 shrink-0 rounded-md ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/10" : "p-0"}`}
               style={{
-                maxWidth: `${appearance.messageMaxWidthPx}px`,
                 overflowWrap: "anywhere",
                 backgroundColor: overlayBackgroundColor(appearance),
                 fontFamily: overlayFontFamily(appearance),

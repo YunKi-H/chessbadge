@@ -65,13 +65,13 @@ export function BroadcastOverlay({ publicToken }: { publicToken: string }) {
     >
       <div
         className={`flex max-h-full w-full max-w-[600px] flex-col justify-end overflow-hidden ${appearance.backgroundVisible ? "gap-2" : "gap-1"}`}
+        style={{ maxWidth: `${appearance.messageMaxWidthPx}px` }}
       >
         {messages.map((message) => (
           <div
             key={message.id}
             className={`overlay-message w-fit max-w-full shrink-0 rounded-md ${appearance.backgroundVisible ? "px-3 py-2 shadow-lg ring-1 ring-white/15" : "p-0"}`}
             style={{
-              maxWidth: `${appearance.messageMaxWidthPx}px`,
               overflowWrap: "anywhere",
               backgroundColor: overlayBackgroundColor(appearance),
               fontFamily: overlayFontFamily(appearance),
