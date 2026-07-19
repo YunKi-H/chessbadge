@@ -107,8 +107,8 @@ recipient, or source must be confirmed before publishing the privacy policy.
 | Naver Chzzk | OAuth code and tokens, channel identity, chat events | Login and live chat collection | App registration terms and processing location |
 | Google Firebase Authentication | UID, display name, custom claims, auth metadata | User authentication | Firebase documents Firebase Authentication as processing data exclusively in US data centers |
 | Google Cloud Firestore | All Firestore records listed above | Primary database | `asia-northeast3` (Seoul), verified from the Firestore database configuration |
-| AWS Lightsail | Application memory and Docker application logs retained for at most 14 days | Hosting | `ap-northeast-2` (Seoul), verified from the origin IP's AWS range; snapshot settings still require console confirmation |
-| Cloudflare | DNS and registrar data | Domain registration and authoritative DNS | DNS-only as of 2026-07-20; HTTP traffic connects directly to the Lightsail origin; enabled account analytics products still require console confirmation |
+| AWS Lightsail | Application memory and Docker application logs retained for at most 14 days | Hosting | `ap-northeast-2` (Seoul), verified from the origin IP's AWS range; automatic snapshots are disabled |
+| Cloudflare | DNS and registrar data | Domain registration and authoritative DNS | DNS-only as of 2026-07-20; HTTP proxy and Cloudflare Analytics are disabled |
 | Chess.com PubAPI | Username requests; profile, Location and rating responses | Chess account linking and refresh | API terms and processing location |
 | Google Fonts | Viewer IP address, user agent and referrer may be sent by the browser | Web-font delivery | Provider terms and transfer details |
 | jsDelivr/GitHub-hosted font assets | Viewer IP address, user agent and referrer may be sent by the browser | Web-font delivery | CDN provider and processing locations |
@@ -143,30 +143,26 @@ Reference material:
 - [Cloud Firestore locations](https://firebase.google.com/docs/firestore/locations)
 - [AWS published IP address ranges](https://ip-ranges.amazonaws.com/ip-ranges.json)
 
-## 7. Current retention gaps
+## 7. Current privacy gaps
 
-The following decisions and implementation work are required before the public
-privacy policy can state accurate retention periods:
+The following follow-up work is not claimed as an available product feature in
+the public privacy policy:
 
-1. Confirm the Lightsail automatic-snapshot setting and which Cloudflare
-   account analytics products, if any, are enabled.
-2. Add an authenticated self-service data export; email support must not
+1. Add an authenticated self-service data export; email support must not
    disclose raw account records without a secure verification path.
-3. Define the service's policy for users under 14 years old.
 
 The operating procedure for access, correction, deletion, and processing
 restriction requests is defined in `docs/privacy-request-process.md`.
+Users under 14 years old are outside the service's intended audience.
 
-## 8. Facts needed from the operator
+## 8. Confirmed operator facts
 
-The public privacy policy cannot be finalized until these operator facts are
-available:
+Confirmed operator facts:
 
-- Operator name (individual or business name).
-- Business address, if one must be disclosed.
-- Privacy contact and responsible person; currently only
-  `support@elobadge.com` is known.
-- Effective date of the policy.
-- Whether Lightsail automatic snapshots are enabled, including their retention
-  behavior.
-- Which Cloudflare analytics or logging products are enabled for the zone.
+- Operator: Pawn Lab (sole proprietorship).
+- Privacy officer: Hwang Yunki.
+- Privacy contact: `support@elobadge.com`.
+- Policy effective date: 2026-07-20.
+- Lightsail automatic snapshots: disabled.
+- Cloudflare HTTP proxy and Analytics: disabled.
+- Users under 14: not an intended service audience.

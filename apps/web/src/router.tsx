@@ -42,6 +42,13 @@ export const router = createBrowserRouter([
           return { Component: module.ViewerPage };
         }
       },
+      {
+        path: "privacy",
+        lazy: async () => {
+          const module = await import("./ui/PrivacyPolicyPage");
+          return { Component: module.PrivacyPolicyPage };
+        }
+      },
       { path: "*", Component: NotFoundPage }
     ]
   }
