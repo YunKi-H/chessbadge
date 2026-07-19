@@ -24,10 +24,9 @@ services:
     security_opt:
       - no-new-privileges:true
     logging:
-      driver: json-file
+      driver: journald
       options:
-        max-size: 10m
-        max-file: "3"
+        tag: elobadge-app
 
   caddy:
     image: caddy:2.10.2-alpine
@@ -48,10 +47,9 @@ services:
     security_opt:
       - no-new-privileges:true
     logging:
-      driver: json-file
+      driver: journald
       options:
-        max-size: 10m
-        max-file: "3"
+        tag: elobadge-caddy
 
 volumes:
   caddy_data:

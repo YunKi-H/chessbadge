@@ -80,6 +80,25 @@ openssl rand -base64 32
 Use the generated value for `CHZZK_TOKEN_ENCRYPTION_KEY`. Do not rotate this key
 after streamer tokens have been stored unless every streamer will log in again.
 
+Install the repository's journal retention policy before starting the
+containers. This dedicated Lightsail host keeps system and container journal
+entries for at most 14 days, rotates journal files daily, and caps persistent
+journal storage at 200 MB:
+
+```sh
+sudo install -D -m 0644 journald-elobadge.conf \
+  /etc/systemd/journald.conf.d/60-elobadge-retention.conf
+sudo systemctl restart systemd-journald
+sudo journalctl --rotate
+sudo journalctl --vacuum-time=14d --vacuum-size=200M
+```
+
+The policy applies to the whole host journal, not only EloBadge. The Compose
+file sends app and Caddy stdout/stderr to journald with separate
+`elobadge-app` and `elobadge-caddy` identifiers. Journal forwarding to syslog is
+disabled so the same container messages are not retained separately under a
+different rotation policy.
+
 Start the containers:
 
 ```sh
@@ -88,6 +107,17 @@ docker compose up -d
 docker compose ps
 docker compose logs --tail=100 app caddy
 ```
+
+Confirm newly created containers use the expected driver and that logs are
+queryable through both Docker and journald:
+
+```sh
+docker inspect --format '{{.HostConfig.LogConfig.Type}}' \
+  "$(docker compose ps -q app)"
+sudo journalctl -t elobadge-app --since "10 minutes ago" --no-pager
+```
+
+The inspect command must print `journald`.
 
 Caddy requests and renews the TLS certificate automatically after DNS resolves
 to the instance and ports 80 and 443 are reachable.
@@ -137,6 +167,14 @@ docker compose up -d
 docker image prune -f
 ```
 
+When this logging-policy change is first deployed to an existing host, install
+`journald-elobadge.conf` as shown in section 4 and recreate both containers so
+the new logging driver takes effect:
+
+```sh
+docker compose up -d --force-recreate
+```
+
 Check `docker compose ps` and application logs after every update.
 
 ## 7. Roll Back
@@ -156,6 +194,7 @@ Change the value back to `latest` only after the failing release is fixed.
 - Enable Lightsail instance metric alarms and an external `/health` monitor.
 - Configure AWS and Firebase budget alerts; alerts do not automatically cap cost.
 - Confirm the verification cleanup service is scheduled in the application log.
+- Confirm containers use journald and the 14-day host retention policy is installed.
 - Keep Ubuntu security updates current and reboot during a planned window.
 - Never commit `deploy/.env`, service-account JSON, or private keys.
 - Retain at most the required Docker images and inspect disk usage periodically.
