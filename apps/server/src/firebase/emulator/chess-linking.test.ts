@@ -11,6 +11,7 @@ import {
 } from "../chess-accounts.js";
 import { getFirebaseAdminApp, getFirestoreDb } from "../admin.js";
 import { deleteUserFirestoreData } from "../account-deletion.js";
+import { deleteOrphanedInactiveOverlays } from "../overlay-cleanup.js";
 import { getChzzkRatingBadge } from "../chess-badges.js";
 import {
   ChessVerificationError,
@@ -246,6 +247,31 @@ test("account deletion removes user-owned Firestore data", async () => {
   );
 });
 
+test("overlay cleanup preserves the streamer's current disabled URL", async () => {
+  const db = getFirestoreDb();
+  const uid = "chzzk:cleanup-streamer";
+  const overlays = db.collection("overlays");
+
+  await Promise.all([
+    db.collection("streamers").doc(uid).set({
+      overlayToken: "current-disabled"
+    }),
+    overlays.doc("current-disabled").set({ streamerUid: uid, active: false }),
+    overlays.doc("rotated-old").set({ streamerUid: uid, active: false }),
+    overlays.doc("malformed-old").set({ active: false }),
+    overlays.doc("active-overlay").set({ streamerUid: uid, active: true })
+  ]);
+
+  assert.deepEqual(await deleteOrphanedInactiveOverlays(), {
+    scanned: 3,
+    deleted: 2
+  });
+  assert.equal((await overlays.doc("current-disabled").get()).exists, true);
+  assert.equal((await overlays.doc("rotated-old").get()).exists, false);
+  assert.equal((await overlays.doc("malformed-old").get()).exists, false);
+  assert.equal((await overlays.doc("active-overlay").get()).exists, true);
+});
+
 test("deployed Firestore rules deny direct unauthenticated client access", async () => {
   const response = await fetch(
     `http://${emulatorHost}/v1/projects/${projectId}/databases/(default)/documents/users/direct-client`
@@ -344,7 +370,7 @@ test("overlay appearance persists and survives public token rotation", async () 
   assert.notEqual(rotated.publicToken, initial.publicToken);
   assert.deepEqual(rotated.appearance, appearance);
   assert.equal(
-    (await db.collection("overlays").doc(initial.publicToken).get()).data()?.active,
+    (await db.collection("overlays").doc(initial.publicToken).get()).exists,
     false
   );
 });

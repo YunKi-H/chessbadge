@@ -14,6 +14,7 @@ import { registerHealthRoutes } from "./routes/health.js";
 import { registerOverlayRoutes } from "./routes/overlay.js";
 import { chessComRatingRefreshService } from "./chess/chesscom/rating-refresh-service.js";
 import { chessComVerificationCleanupService } from "./chess/chesscom/verification-cleanup-service.js";
+import { overlayCleanupService } from "./firebase/overlay-cleanup-service.js";
 import { registerHttpSecurity } from "./security/http-security.js";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -60,6 +61,7 @@ await registerChzzkAuthRoutes(app);
 app.addHook("onClose", async () => {
   chessComRatingRefreshService.stop();
   chessComVerificationCleanupService.stop();
+  overlayCleanupService.stop();
 });
 
 await app.listen({ port, host: "0.0.0.0" });
@@ -67,6 +69,7 @@ await app.listen({ port, host: "0.0.0.0" });
 void restoreChzzkSessions();
 chessComRatingRefreshService.start(app.log);
 chessComVerificationCleanupService.start(app.log);
+overlayCleanupService.start(app.log);
 
 async function restoreChzzkSessions() {
   try {

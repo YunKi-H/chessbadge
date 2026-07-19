@@ -364,11 +364,7 @@ async function createOrRotateOverlayAccess(
 
         if (existing.exists && existing.data()?.streamerUid === streamerUid) {
           appearance = normalizeOverlayAppearance(existing.data()?.theme);
-          transaction.set(
-            existingRef,
-            { active: false, updatedAt: FieldValue.serverTimestamp() },
-            { merge: true }
-          );
+          transaction.delete(existingRef);
         }
       }
 

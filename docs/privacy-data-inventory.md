@@ -62,8 +62,8 @@ remains personal data when EloBadge associates it with a Chzzk identity.
 | Nickname and message content | Render the overlay | Process memory and SSE event | Transient | Not written to Firestore or application logs |
 | Chzzk role, badge image URLs and emoji image URLs | Render and classify chat | Process memory and SSE event | Transient | Not stored per message in Firestore |
 | Selected chess badge | Avoid a Firestore lookup for each message | `chzzkAccounts/{channelId}.badge`, in-memory cache | Stored plus transient cache | Cleared on chess account disconnect |
-| Overlay public token | Authorize an OBS browser source | `streamers`, `overlays`, browser-source URL | Stored secret-like identifier | Rotated tokens remain inactive while the account exists; all are deleted on account deletion |
-| Overlay appearance settings | Render streamer-selected UI | `overlays/{publicToken}.theme` | Stored | Deleted with every active and inactive overlay on account deletion |
+| Overlay public token | Authorize an OBS browser source | `streamers`, `overlays`, browser-source URL | Stored secret-like identifier | Previous token is deleted on rotation; current disabled token is retained for reuse; orphaned legacy tokens are cleaned daily; all are deleted on account deletion |
+| Overlay appearance settings | Render streamer-selected UI | `overlays/{publicToken}.theme` | Stored | Copied to the new token on rotation and deleted with the previous document; deleted on account deletion |
 | Disclosure-section UI state | Remember expanded settings sections | Browser `localStorage` | Stored on user device | User clears browser storage |
 
 The application keeps at most 30 chat messages in each open browser overlay.
@@ -122,15 +122,13 @@ user database or runtime logs are intentionally sent there by the application.
 The following decisions and implementation work are required before the public
 privacy policy can state accurate retention periods:
 
-1. Decide when inactive overlay documents are permanently deleted while an
-   account remains active.
-2. Confirm Firebase, AWS and Cloudflare regions and whether Cloudflare proxying
+1. Confirm Firebase, AWS and Cloudflare regions and whether Cloudflare proxying
    is enabled.
-3. Decide whether to self-host web fonts to avoid browser requests to multiple
+2. Decide whether to self-host web fonts to avoid browser requests to multiple
    third-party font CDNs.
-4. Define how requests for access, correction, deletion and processing
+3. Define how requests for access, correction, deletion and processing
    suspension are received and verified.
-5. Define the service's policy for users under 14 years old.
+4. Define the service's policy for users under 14 years old.
 
 ## 8. Facts needed from the operator
 

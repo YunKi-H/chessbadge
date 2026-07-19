@@ -145,6 +145,11 @@ container deletes up to 100 expired Chess.com verification challenges after
 startup and every six hours instead. Confirm the startup log contains
 `Chess.com verification cleanup scheduled` after each deployment.
 
+The application also removes orphaned inactive overlay documents after startup
+and every 24 hours. Confirm the startup log contains
+`Inactive overlay cleanup scheduled`. The streamer's current disabled overlay
+is preserved for re-enabling with the same OBS URL.
+
 Verify these flows after deployment:
 
 1. Open `/health` and confirm an HTTP 200 response.
@@ -194,6 +199,7 @@ Change the value back to `latest` only after the failing release is fixed.
 - Enable Lightsail instance metric alarms and an external `/health` monitor.
 - Configure AWS and Firebase budget alerts; alerts do not automatically cap cost.
 - Confirm the verification cleanup service is scheduled in the application log.
+- Confirm the inactive overlay cleanup service is scheduled in the application log.
 - Confirm containers use journald and the 14-day host retention policy is installed.
 - Keep Ubuntu security updates current and reboot during a planned window.
 - Never commit `deploy/.env`, service-account JSON, or private keys.

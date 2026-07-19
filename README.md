@@ -109,6 +109,10 @@ overlay token. `/overlay/{token}` is the OBS browser-source page and
 `/events/overlay/{token}` streams only that token's streamer events. Rotation or
 disablement revokes current in-process SSE connections immediately; periodic
 Firestore revalidation also closes connections changed by external processes.
+Rotation deletes the previous overlay document after copying its appearance.
+Disabling preserves the current document so enabling can restore the same OBS
+URL. A daily cleanup removes legacy inactive documents that are no longer the
+streamer's current token.
 
 The Custom Token is never placed in the callback URL. The one-time login code is
 kept in server memory for two minutes and can be consumed only once. This is valid

@@ -186,10 +186,18 @@ message color. The browser keeps at most the latest 30 messages regardless of
 the duration.
 
 The random document ID is the OBS browser-source token. It must be long enough
-to resist guessing and must be replaceable from the streamer dashboard. Rotated
-tokens remain as inactive documents so existing browser sources stop resolving.
-The active token is also stored on `streamers/{firebaseUid}.overlayToken` for a
-direct authenticated dashboard lookup.
+to resist guessing and must be replaceable from the streamer dashboard. Rotation
+copies the appearance to a new document and deletes the previous document in the
+same transaction. Disabling marks the current document inactive but retains it
+so enabling can restore the same OBS URL. The current token is stored on
+`streamers/{firebaseUid}.overlayToken` for a direct authenticated dashboard
+lookup.
+
+Fastify scans inactive overlay documents shortly after startup and every 24
+hours. It preserves a document only when its ID still matches the owning
+streamer's current `overlayToken`; malformed, ownerless, and superseded inactive
+documents are deleted in batches of at most 400. A single-process lock prevents
+overlapping cleanup scans.
 
 Legacy documents with an empty `theme` use the default appearance. Rotating an
 overlay token copies the current theme to the new document. Saving appearance
