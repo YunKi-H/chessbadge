@@ -47,7 +47,7 @@ server secrets, not user data returned to browsers.
 | Bullet, Blitz and Rapid ratings, deviation and update times | Select and display the highest rating | `chessAccounts/{accountId}/ratings/{speed}` | Stored | Deleted immediately on disconnect |
 | Verification status, method and timestamps | Prove account ownership | `chessAccounts/{accountId}` | Stored | Deleted immediately on disconnect |
 | Chess.com Location value | Compare the public profile against a challenge | Server memory during verification request | Transient | Not written to Firestore by EloBadge |
-| Hashed verification code, failed attempts and expiry | Verify profile ownership | `chessVerificationChallenges/{accountId}` | Stored | Deleted after success or disconnect; expired challenges are not automatically deleted |
+| Hashed verification code, failed attempts and expiry | Verify profile ownership | `chessVerificationChallenges/{accountId}` | Stored | Deleted after success or disconnect; expired challenges are deleted by a startup and six-hour server cleanup job |
 | Rating refresh status, failures, lease IDs and timestamps | Schedule and coordinate refreshes | `chessAccounts/{accountId}` | Stored | No automatic deletion |
 
 Chess.com profile and rating data is publicly available at the source, but it
@@ -118,17 +118,15 @@ privacy policy can state accurate retention periods:
 
 1. Define a full EloBadge account-deletion flow covering Firebase Auth and all
    user-owned Firestore records.
-2. Add automatic deletion for expired verification challenges, preferably with
-   a Firestore TTL policy or scheduled cleanup.
-3. Define and enforce a time-based retention period for operational logs.
-4. Decide when inactive overlay documents are permanently deleted.
-5. Confirm Firebase, AWS and Cloudflare regions and whether Cloudflare proxying
+2. Define and enforce a time-based retention period for operational logs.
+3. Decide when inactive overlay documents are permanently deleted.
+4. Confirm Firebase, AWS and Cloudflare regions and whether Cloudflare proxying
    is enabled.
-6. Decide whether to self-host web fonts to avoid browser requests to multiple
+5. Decide whether to self-host web fonts to avoid browser requests to multiple
    third-party font CDNs.
-7. Define how requests for access, correction, deletion and processing
+6. Define how requests for access, correction, deletion and processing
    suspension are received and verified.
-8. Define the service's policy for users under 14 years old.
+7. Define the service's policy for users under 14 years old.
 
 ## 8. Facts needed from the operator
 

@@ -103,6 +103,18 @@ https://badge.example.com/api/auth/chzzk/callback
 The same value must be stored in `CHZZK_REDIRECT_URI`. Add the production
 hostname to **Firebase Authentication > Settings > Authorized domains**.
 
+Deploy the deny-by-default Firestore rules from an authenticated development
+machine or Cloud Shell:
+
+```sh
+pnpm exec firebase deploy --only firestore:rules --project elobadge
+```
+
+The Spark plan does not support managed Firestore TTL deletion. The application
+container deletes up to 100 expired Chess.com verification challenges after
+startup and every six hours instead. Confirm the startup log contains
+`Chess.com verification cleanup scheduled` after each deployment.
+
 Verify these flows after deployment:
 
 1. Open `/health` and confirm an HTTP 200 response.
@@ -143,6 +155,7 @@ Change the value back to `latest` only after the failing release is fixed.
 
 - Enable Lightsail instance metric alarms and an external `/health` monitor.
 - Configure AWS and Firebase budget alerts; alerts do not automatically cap cost.
+- Confirm the verification cleanup service is scheduled in the application log.
 - Keep Ubuntu security updates current and reboot during a planned window.
 - Never commit `deploy/.env`, service-account JSON, or private keys.
 - Retain at most the required Docker images and inspect disk usage periodically.

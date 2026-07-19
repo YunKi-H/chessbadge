@@ -16,6 +16,7 @@ import {
   completeChessComLocationVerification,
   createChessComLocationChallenge
 } from "../chess-verifications.js";
+import { deleteExpiredChessVerificationChallenges } from "../chess-verification-cleanup.js";
 import {
   ChessRatingRefreshError,
   claimManualChessComRatingRefresh,
@@ -168,6 +169,27 @@ test("one Chess.com account cannot be linked to two Chzzk users", async () => {
     saveUnverifiedChessComAccount("chzzk:second", player),
     (error: unknown) => error instanceof ChessAccountConflictError
   );
+});
+
+test("verification cleanup deletes only expired challenges", async () => {
+  const db = getFirestoreDb();
+  const now = new Date("2026-07-20T00:00:00.000Z");
+  const challenges = db.collection("chessVerificationChallenges");
+
+  await Promise.all([
+    challenges.doc("expired").set({
+      expiresAt: Timestamp.fromMillis(now.getTime() - 1)
+    }),
+    challenges.doc("active").set({
+      expiresAt: Timestamp.fromMillis(now.getTime() + 1)
+    }),
+    challenges.doc("legacy-without-expiry").set({ createdAt: Timestamp.now() })
+  ]);
+
+  assert.equal(await deleteExpiredChessVerificationChallenges(now), 1);
+  assert.equal((await challenges.doc("expired").get()).exists, false);
+  assert.equal((await challenges.doc("active").get()).exists, true);
+  assert.equal((await challenges.doc("legacy-without-expiry").get()).exists, true);
 });
 
 test("deployed Firestore rules deny direct unauthenticated client access", async () => {

@@ -302,6 +302,13 @@ Successful verification deletes the challenge document. PubAPI caching can
 delay visibility of a newly edited Location, so a mismatch is retryable and
 does not consume or replace the challenge immediately.
 
+The application rejects expired challenges immediately. Because the Firebase
+project remains on the Spark plan, the Fastify process also queries and deletes
+up to 100 expired challenge documents shortly after startup and every six
+hours. A single-process lock prevents overlapping cleanup scans. This avoids
+the billing requirement of Firestore's managed TTL feature while keeping
+abandoned challenges bounded.
+
 ## Chat Lookup
 
 ```text
