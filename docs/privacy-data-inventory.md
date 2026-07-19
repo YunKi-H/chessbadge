@@ -102,13 +102,13 @@ to syslog. Caddy access logging is not enabled in the current Caddyfile.
 The legal classification of each provider as a processor, third-party
 recipient, or source must be confirmed before publishing the privacy policy.
 
-| Service | Data flow | Purpose | Location/transfer information to confirm |
+| Service | Data flow | Purpose | Location/transfer information |
 | --- | --- | --- | --- |
 | Naver Chzzk | OAuth code and tokens, channel identity, chat events | Login and live chat collection | App registration terms and processing location |
-| Google Firebase Authentication | UID, display name, custom claims, auth metadata | User authentication | Firebase Auth processing/storage location |
-| Google Cloud Firestore | All Firestore records listed above | Primary database | Actual configured database region |
-| AWS Lightsail | Application memory and Docker application logs retained for at most 14 days | Hosting | Actual Lightsail region and snapshot settings |
-| Cloudflare | DNS data; HTTP metadata only if proxying is enabled | Domain, optional proxy/security | Current DNS proxy status and enabled log/analytics products |
+| Google Firebase Authentication | UID, display name, custom claims, auth metadata | User authentication | Firebase documents Firebase Authentication as processing data exclusively in US data centers |
+| Google Cloud Firestore | All Firestore records listed above | Primary database | `asia-northeast3` (Seoul), verified from the Firestore database configuration |
+| AWS Lightsail | Application memory and Docker application logs retained for at most 14 days | Hosting | `ap-northeast-2` (Seoul), verified from the origin IP's AWS range; snapshot settings still require console confirmation |
+| Cloudflare | DNS and registrar data | Domain registration and authoritative DNS | DNS-only as of 2026-07-20; HTTP traffic connects directly to the Lightsail origin; enabled account analytics products still require console confirmation |
 | Chess.com PubAPI | Username requests; profile, Location and rating responses | Chess account linking and refresh | API terms and processing location |
 | Google Fonts | Viewer IP address, user agent and referrer may be sent by the browser | Web-font delivery | Provider terms and transfer details |
 | jsDelivr/GitHub-hosted font assets | Viewer IP address, user agent and referrer may be sent by the browser | Web-font delivery | CDN provider and processing locations |
@@ -117,18 +117,45 @@ recipient, or source must be confirmed before publishing the privacy policy.
 GitHub Actions and GHCR build and distribute application code. No production
 user database or runtime logs are intentionally sent there by the application.
 
+EloBadge intentionally retains external web-font delivery for the available
+font presets. This avoids bundling a large font library with every application
+deployment, but means a viewer's browser can contact the font providers listed
+above. Revisit this decision if provider terms change or stricter network
+privacy becomes a product requirement.
+
+Infrastructure facts were checked on 2026-07-20 using these signals:
+
+- Firestore CLI reported the default database location as
+  `asia-northeast3`.
+- `elobadge.com` resolved directly to `52.79.91.148`; AWS's published IP ranges
+  classify that address under `ap-northeast-2`.
+- The public HTTP response contained a Caddy `Via` header and no Cloudflare
+  proxy response headers. Cloudflare nameservers remain authoritative for the
+  domain, so Cloudflare still processes DNS and registrar-related data.
+
+These are deployment facts, not permanent assumptions. Recheck this section
+after changing the Firestore database, Lightsail instance, DNS records, or the
+Cloudflare proxy switch.
+
+Reference material:
+
+- [Firebase privacy and data-processing locations](https://firebase.google.com/support/privacy)
+- [Cloud Firestore locations](https://firebase.google.com/docs/firestore/locations)
+- [AWS published IP address ranges](https://ip-ranges.amazonaws.com/ip-ranges.json)
+
 ## 7. Current retention gaps
 
 The following decisions and implementation work are required before the public
 privacy policy can state accurate retention periods:
 
-1. Confirm Firebase, AWS and Cloudflare regions and whether Cloudflare proxying
-   is enabled.
-2. Decide whether to self-host web fonts to avoid browser requests to multiple
-   third-party font CDNs.
-3. Define how requests for access, correction, deletion and processing
-   suspension are received and verified.
-4. Define the service's policy for users under 14 years old.
+1. Confirm the Lightsail automatic-snapshot setting and which Cloudflare
+   account analytics products, if any, are enabled.
+2. Add an authenticated self-service data export; email support must not
+   disclose raw account records without a secure verification path.
+3. Define the service's policy for users under 14 years old.
+
+The operating procedure for access, correction, deletion, and processing
+restriction requests is defined in `docs/privacy-request-process.md`.
 
 ## 8. Facts needed from the operator
 
@@ -140,4 +167,6 @@ available:
 - Privacy contact and responsible person; currently only
   `support@elobadge.com` is known.
 - Effective date of the policy.
-- Confirmed Firebase, AWS, and Cloudflare infrastructure regions.
+- Whether Lightsail automatic snapshots are enabled, including their retention
+  behavior.
+- Which Cloudflare analytics or logging products are enabled for the zone.
