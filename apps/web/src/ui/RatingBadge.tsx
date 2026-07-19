@@ -16,7 +16,10 @@ export function RatingBadge({
       aria-label={`${providerName} rating ${rating.value}`}
       title={`${providerName} ${rating.speed} rating`}
     >
-      <span className="flex items-center gap-[0.25em] rounded bg-white px-[0.45em] py-[0.2em] text-[0.72em] font-bold leading-none text-slate-950 shadow-sm ring-1 ring-black/10">
+      <span
+        className="flex items-center gap-[0.25em] rounded bg-white px-[0.45em] py-[0.2em] text-[0.72em] font-bold leading-none shadow-sm ring-1 ring-black/10"
+        style={{ color: "#020617" }}
+      >
         {rating.provider === "chesscom" ? (
           <img
             src="/chess-com-logo.svg"
