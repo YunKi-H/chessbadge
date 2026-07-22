@@ -7,7 +7,8 @@ import {
   type OverlayFontFamily,
   type OverlayFontLineHeight,
   type OverlayFontWeight,
-  type OverlayMessageDurationSeconds
+  type OverlayMessageDurationSeconds,
+  type RatingProviderPolicy
 } from "@elobadge/core";
 import {
   BadgeCheck,
@@ -128,6 +129,16 @@ const FONT_LINE_HEIGHT_OPTIONS: ReadonlyArray<OverlayFontLineHeight> = [
 ];
 
 const FONT_PREVIEW_TEXT = "동해물과 백두산이 마르고 닳도록...";
+
+const RATING_PROVIDER_POLICY_OPTIONS: ReadonlyArray<{
+  value: RatingProviderPolicy;
+  label: string;
+}> = [
+  { value: "viewer_choice", label: "시청자 선택 따르기" },
+  { value: "chesscom_only", label: "Chess.com만 표시" },
+  { value: "lichess_only", label: "Lichess만 표시" },
+  { value: "hidden", label: "표시하지 않음" }
+];
 
 const CHAT_AUTHOR_KIND_OPTIONS: ReadonlyArray<{
   kind: ChatAuthorKind;
@@ -459,26 +470,15 @@ export function OverlaySettings({
               expanded={expandedSections.badges}
               onToggle={() => toggleAppearanceSection("badges")}
             >
-                <label className="grid gap-2 text-sm font-medium text-slate-200">
-                  체스 레이팅 배지
-                  <select
-                    value={overlay.appearance.ratingProviderPolicy}
-                    onChange={(event) =>
-                      updateAppearanceDraft({
-                        ratingProviderPolicy: event.target.value as OverlayAppearance["ratingProviderPolicy"]
-                      })
-                    }
-                    className="h-10 rounded-md border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-emerald-400"
-                  >
-                    <option value="viewer_choice">시청자 선택 따르기</option>
-                    <option value="chesscom_only">Chess.com만 표시</option>
-                    <option value="lichess_only">Lichess만 표시</option>
-                    <option value="hidden">표시하지 않음</option>
-                  </select>
-                  <span className="text-xs font-normal leading-5 text-slate-400">
-                    특정 플랫폼을 선택하면 해당 계정을 연결하지 않은 시청자의 체스 배지는 표시하지 않습니다.
-                  </span>
-                </label>
+                <RatingProviderPolicySelect
+                  value={overlay.appearance.ratingProviderPolicy}
+                  onChange={(ratingProviderPolicy) =>
+                    updateAppearanceDraft({ ratingProviderPolicy })
+                  }
+                />
+                <p className="text-xs leading-5 text-slate-400">
+                  특정 플랫폼을 선택하면 해당 계정을 연결하지 않은 시청자의 체스 배지는 표시하지 않습니다.
+                </p>
 
                 <div className="border-t border-white/10 pt-5">
                 <label className="flex items-center justify-between gap-4 text-sm font-medium text-slate-200">
@@ -1055,6 +1055,100 @@ function FontFamilySelect({
                 >
                   {option.label} - {FONT_PREVIEW_TEXT}
                 </span>
+                {selected ? (
+                  <Check aria-hidden="true" size={17} className="shrink-0" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RatingProviderPolicySelect({
+  value,
+  onChange
+}: {
+  value: RatingProviderPolicy;
+  onChange: (value: RatingProviderPolicy) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedLabel =
+    RATING_PROVIDER_POLICY_OPTIONS.find((option) => option.value === value)
+      ?.label ?? "시청자 선택 따르기";
+
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setExpanded(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setExpanded(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [expanded]);
+
+  return (
+    <div ref={containerRef} className="relative grid gap-2">
+      <span className="text-sm font-medium text-slate-200">
+        체스 레이팅 배지
+      </span>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={expanded}
+        aria-controls="overlay-rating-provider-options"
+        onClick={() => setExpanded((current) => !current)}
+        className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-left text-base text-white outline-none transition hover:border-white/25 focus-visible:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400/30"
+      >
+        <span className="min-w-0 truncate">{selectedLabel}</span>
+        <ChevronDown
+          aria-hidden="true"
+          size={18}
+          className={`shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {expanded ? (
+        <div
+          id="overlay-rating-provider-options"
+          role="listbox"
+          aria-label="체스 레이팅 배지 표시 방식"
+          className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-md border border-white/10 bg-slate-950 py-1 shadow-xl shadow-black/40"
+        >
+          {RATING_PROVIDER_POLICY_OPTIONS.map((option) => {
+            const selected = option.value === value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(option.value);
+                  setExpanded(false);
+                }}
+                className={`flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-base transition ${selected ? "bg-emerald-400/10 text-emerald-200" : "text-slate-300 hover:bg-white/5 hover:text-white"}`}
+              >
+                <span className="min-w-0 truncate">{option.label}</span>
                 {selected ? (
                   <Check aria-hidden="true" size={17} className="shrink-0" />
                 ) : null}
