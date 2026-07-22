@@ -220,7 +220,7 @@ infrastructure access logs must redact the token path segment.
   providerUserId: string | null;
   verifiedAt: Timestamp | null;
   verificationMethod: string | null;
-  selectedSpeed: "bullet" | "blitz" | "rapid" | null;
+  selectedSpeed: "bullet" | "blitz" | "rapid" | "classical" | null;
   profileUrl: string;
   avatarUrl: string | null;
   accountStatus: string;
@@ -282,6 +282,14 @@ when loading the viewer settings page. A rating document contains:
 }
 ```
 
+Lichess uses `users/{firebaseUid}.chessAccountIds.lichess` and deterministic
+IDs in the form `lichess:{normalizedUsername}`. OAuth PKCE verifies ownership
+immediately with `verificationMethod: "oauth_pkce"`; the temporary access token
+is revoked after `/api/account` and is never stored. Its rating documents are
+`bullet`, `blitz`, `rapid`, and `classical`, and additionally store `games` and
+`provisional`. `users/{firebaseUid}.activeChessProvider` records which linked
+provider currently supplies the denormalized chat badge.
+
 ### `chessVerificationChallenges/{accountId}`
 
 Chess.com ownership verification asks the viewer to temporarily place a
@@ -322,7 +330,7 @@ abandoned challenges bounded.
 `DELETE /api/account` requires a Firebase ID token whose UID exactly matches
 `chzzk:{chzzkChannelId}`. The server stops any active chat session, attempts to
 revoke stored Chzzk credentials, and then deletes every overlay document owned
-by the user, the linked Chess.com account and ratings, a pending verification
+by the user, the linked Chess.com and Lichess accounts and ratings, a pending verification
 challenge, `chzzkTokens`, `streamers`, `chzzkAccounts`, and `users`. It closes
 open SSE overlay connections and removes the Firebase Authentication user last.
 

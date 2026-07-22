@@ -138,14 +138,16 @@ export async function completeChessComRatingRefresh(
 ): Promise<boolean> {
   const db = getFirestoreDb();
   const accountRef = db.collection("chessAccounts").doc(claim.accountId);
+  const userRef = db.collection("users").doc(claim.uid);
   const chzzkAccountRef = db
     .collection("chzzkAccounts")
     .doc(claim.chzzkChannelId);
 
   return db.runTransaction(async (transaction) => {
-    const [accountSnapshot, chzzkAccountSnapshot] = await Promise.all([
+    const [accountSnapshot, chzzkAccountSnapshot, userSnapshot] = await Promise.all([
       transaction.get(accountRef),
-      transaction.get(chzzkAccountRef)
+      transaction.get(chzzkAccountRef),
+      transaction.get(userRef)
     ]);
     const account = accountSnapshot.data();
 
@@ -200,7 +202,10 @@ export async function completeChessComRatingRefresh(
       updatedAt: Timestamp.fromDate(now)
     });
 
-    if (chzzkAccountSnapshot.data()?.uid === claim.uid) {
+    if (
+      chzzkAccountSnapshot.data()?.uid === claim.uid &&
+      userSnapshot.data()?.activeChessProvider !== "lichess"
+    ) {
       transaction.set(
         chzzkAccountRef,
         {

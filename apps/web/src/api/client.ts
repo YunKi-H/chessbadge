@@ -60,6 +60,70 @@ export interface ChessComVerificationChallenge {
   expiresAt: string;
 }
 
+export interface LichessAccount {
+  provider: "lichess";
+  username: string;
+  profileUrl: string;
+  verified: true;
+  selectedSpeed: "bullet" | "blitz" | "rapid" | "classical" | null;
+  ratingsFetchedAt: string | null;
+  manualRefreshAvailableAt: string | null;
+  ratings: Array<{
+    speed: "bullet" | "blitz" | "rapid" | "classical";
+    value: number;
+    ratingDeviation: number;
+    provisional: boolean;
+    games: number;
+  }>;
+}
+
+export async function getLichessAccount(): Promise<LichessAccount | null> {
+  const response = await authenticatedFetch("/api/chess/lichess/account");
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok || !isLichessAccountResponse(body)) {
+    throw new Error(apiError(body, "Lichess 계정 정보를 불러오지 못했습니다."));
+  }
+  return body.account;
+}
+
+export async function startLichessConnection(): Promise<string> {
+  const response = await authenticatedFetch("/api/auth/lichess/start", {
+    method: "POST"
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (
+    !response.ok ||
+    !body ||
+    typeof body !== "object" ||
+    (body as { ok?: unknown }).ok !== true ||
+    typeof (body as { authorizationUrl?: unknown }).authorizationUrl !== "string"
+  ) {
+    throw new Error(apiError(body, "Lichess 연결을 시작하지 못했습니다."));
+  }
+  return (body as { authorizationUrl: string }).authorizationUrl;
+}
+
+export async function refreshLichessAccount(): Promise<LichessAccount> {
+  const response = await authenticatedFetch("/api/chess/lichess/account/refresh", {
+    method: "POST"
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok || !isLichessAccountResponse(body) || !body.account) {
+    throw new Error(apiError(body, "Lichess 레이팅을 갱신하지 못했습니다."));
+  }
+  return body.account;
+}
+
+export async function disconnectLichessAccount(): Promise<void> {
+  const response = await authenticatedFetch("/api/chess/lichess/account", {
+    method: "DELETE"
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok || !isLichessAccountResponse(body) || body.account !== null) {
+    throw new Error(apiError(body, "Lichess 계정 연동을 해제하지 못했습니다."));
+  }
+}
+
 export async function disconnectChzzkConnection(): Promise<boolean> {
   const response = await authenticatedFetch("/api/chzzk/connection", {
     method: "DELETE"
@@ -437,6 +501,40 @@ function isChessComVerificationResponse(
     response.ok === true &&
     typeof response.verification?.code === "string" &&
     typeof response.verification.expiresAt === "string"
+  );
+}
+
+function isLichessAccountResponse(
+  value: unknown
+): value is { ok: true; account: LichessAccount | null } {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const response = value as {
+    ok?: unknown;
+    account?: Partial<LichessAccount> | null;
+  };
+  if (response.ok !== true || response.account === undefined) {
+    return false;
+  }
+  if (response.account === null) {
+    return true;
+  }
+  return (
+    response.account.provider === "lichess" &&
+    typeof response.account.username === "string" &&
+    typeof response.account.profileUrl === "string" &&
+    response.account.verified === true &&
+    (response.account.ratingsFetchedAt === null ||
+      typeof response.account.ratingsFetchedAt === "string") &&
+    (response.account.manualRefreshAvailableAt === null ||
+      typeof response.account.manualRefreshAvailableAt === "string") &&
+    (response.account.selectedSpeed === null ||
+      response.account.selectedSpeed === "bullet" ||
+      response.account.selectedSpeed === "blitz" ||
+      response.account.selectedSpeed === "rapid" ||
+      response.account.selectedSpeed === "classical") &&
+    Array.isArray(response.account.ratings)
   );
 }
 

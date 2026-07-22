@@ -14,6 +14,11 @@ import { deleteUserFirestoreData } from "../account-deletion.js";
 import { deleteOrphanedInactiveOverlays } from "../overlay-cleanup.js";
 import { getChzzkRatingBadge } from "../chess-badges.js";
 import {
+  disconnectLichessAccount,
+  getUserLichessAccount,
+  saveVerifiedLichessAccount
+} from "../lichess-accounts.js";
+import {
   ChessVerificationError,
   completeChessComLocationVerification,
   createChessComLocationChallenge
@@ -173,6 +178,42 @@ test("one Chess.com account cannot be linked to two Chzzk users", async () => {
   );
 });
 
+test("Lichess OAuth linking stores ratings, selects a badge, and disconnects", async () => {
+  const uid = "chzzk:lichess-viewer";
+  const channelId = "lichess-viewer";
+  const db = getFirestoreDb();
+  await Promise.all([
+    db.collection("users").doc(uid).set({ displayName: "viewer" }),
+    db.collection("chzzkAccounts").doc(channelId).set({ uid, badge: null })
+  ]);
+
+  const account = await saveVerifiedLichessAccount(uid, channelId, {
+    username: "LichessViewer",
+    normalizedUsername: "lichessviewer",
+    playerId: "lichessviewer",
+    profileUrl: "https://lichess.org/@/LichessViewer",
+    avatarUrl: null,
+    status: "active",
+    ratings: [
+      { speed: "blitz", value: 1900, ratingDeviation: 50, provisional: false, games: 30 },
+      { speed: "classical", value: 2050, ratingDeviation: 70, provisional: true, games: 8 }
+    ]
+  });
+
+  assert.equal(account.selectedSpeed, "classical");
+  assert.equal((await getUserLichessAccount(uid))?.username, "LichessViewer");
+  assert.deepEqual(await getChzzkRatingBadge(channelId), {
+    provider: "lichess",
+    speed: "classical",
+    value: 2050,
+    provisional: true
+  });
+
+  assert.equal(await disconnectLichessAccount(uid, channelId), true);
+  assert.equal(await getUserLichessAccount(uid), null);
+  assert.equal(await getChzzkRatingBadge(channelId), null);
+});
+
 test("verification cleanup deletes only expired challenges", async () => {
   const db = getFirestoreDb();
   const now = new Date("2026-07-20T00:00:00.000Z");
@@ -200,6 +241,7 @@ test("account deletion removes user-owned Firestore data", async () => {
   const channelId = "delete-channel";
   const accountId = "chesscom:delete-player";
   const accountRef = db.collection("chessAccounts").doc(accountId);
+  const lichessAccountRef = db.collection("chessAccounts").doc("lichess:delete-player");
   const ownedDocuments = [
     db.collection("users").doc(uid),
     db.collection("chzzkAccounts").doc(channelId),
@@ -211,11 +253,18 @@ test("account deletion removes user-owned Firestore data", async () => {
     accountRef.collection("ratings").doc("bullet"),
     accountRef.collection("ratings").doc("blitz"),
     accountRef.collection("ratings").doc("rapid"),
-    db.collection("chessVerificationChallenges").doc(accountId)
+    db.collection("chessVerificationChallenges").doc(accountId),
+    lichessAccountRef,
+    lichessAccountRef.collection("ratings").doc("bullet"),
+    lichessAccountRef.collection("ratings").doc("blitz"),
+    lichessAccountRef.collection("ratings").doc("rapid"),
+    lichessAccountRef.collection("ratings").doc("classical")
   ];
 
   await Promise.all([
-    ownedDocuments[0]!.set({ chessAccountIds: { chesscom: accountId } }),
+    ownedDocuments[0]!.set({
+      chessAccountIds: { chesscom: accountId, lichess: "lichess:delete-player" }
+    }),
     ownedDocuments[1]!.set({ uid }),
     ownedDocuments[2]!.set({ overlayToken: "active-overlay" }),
     ownedDocuments[3]!.set({ encryptedAccessToken: "secret" }),
@@ -226,6 +275,11 @@ test("account deletion removes user-owned Firestore data", async () => {
     ownedDocuments[8]!.set({ value: 1100 }),
     ownedDocuments[9]!.set({ value: 1200 }),
     ownedDocuments[10]!.set({ uid }),
+    ownedDocuments[11]!.set({ uid, provider: "lichess" }),
+    ownedDocuments[12]!.set({ value: 1300 }),
+    ownedDocuments[13]!.set({ value: 1400 }),
+    ownedDocuments[14]!.set({ value: 1500 }),
+    ownedDocuments[15]!.set({ value: 1600 }),
     db.collection("overlays").doc("another-overlay").set({
       streamerUid: "chzzk:another-channel",
       active: true

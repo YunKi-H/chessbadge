@@ -53,6 +53,15 @@ server secrets, not user data returned to browsers.
 Chess.com profile and rating data is publicly available at the source, but it
 remains personal data when EloBadge associates it with a Chzzk identity.
 
+## 3.1 Lichess account and rating data
+
+| Data | Purpose | Location | Status | Current deletion behavior |
+| --- | --- | --- | --- | --- |
+| Lichess username, stable ID and profile URL | Verify and display the linked profile | `chessAccounts/{accountId}` | Stored | Deleted immediately on disconnect |
+| Bullet, Blitz, Rapid and Classical ratings, deviation, game count and provisional state | Select and display the highest rating | `chessAccounts/{accountId}/ratings/{speed}` | Stored | Deleted immediately on disconnect |
+| OAuth state and PKCE verifier | Protect the ownership-verification redirect | Server memory | Transient | Consumed once or expires after 10 minutes |
+| Lichess OAuth access token | Read the authenticated profile | Server memory | Transient | Revoked immediately after the callback and never stored |
+
 ## 4. Chat and overlay data
 
 | Data | Purpose | Location | Status | Current deletion behavior |
@@ -110,6 +119,7 @@ recipient, or source must be confirmed before publishing the privacy policy.
 | AWS Lightsail | Application memory and Docker application logs retained for at most 14 days | Hosting | `ap-northeast-2` (Seoul), verified from the origin IP's AWS range; automatic snapshots are disabled |
 | Cloudflare | DNS and registrar data | Domain registration and authoritative DNS | DNS-only as of 2026-07-20; HTTP proxy and Cloudflare Analytics are disabled |
 | Chess.com PubAPI | Username requests; profile, Location and rating responses | Chess account linking and refresh | API terms and processing location |
+| Lichess API | OAuth code and temporary token; public profile and rating responses | Account ownership verification and rating refresh | Lichess terms and processing location |
 | Google Fonts | Viewer IP address, user agent and referrer may be sent by the browser | Web-font delivery | Provider terms and transfer details |
 | jsDelivr/GitHub-hosted font assets | Viewer IP address, user agent and referrer may be sent by the browser | Web-font delivery | CDN provider and processing locations |
 | Naver `hangeul.pstatic.net` | Viewer IP address, user agent and referrer may be sent by the browser | Web-font delivery | Provider terms and processing location |

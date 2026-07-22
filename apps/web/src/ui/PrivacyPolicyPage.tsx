@@ -14,7 +14,7 @@ export function PrivacyPolicyPage() {
       <PolicySection title="1. 개인정보 처리 목적">
         <p>
           Pawn Lab(이하 "운영자")은 EloBadge의 치지직 로그인, 스트리머
-          채팅 연결, 방송용 오버레이 제공, Chess.com 계정 소유 확인과 레이팅
+          채팅 연결, 방송용 오버레이 제공, Chess.com·Lichess 계정 소유 확인과 레이팅
           표시, 문의 대응 및 서비스 보안·장애 대응을 위해 개인정보를
           처리합니다. 수집한 정보는 이 목적 외로 이용하지 않습니다.
         </p>
@@ -38,6 +38,11 @@ export function PrivacyPolicyPage() {
               "Chess.com 연동",
               "사용자명, 플레이어 ID, 프로필 URL·이미지·상태, Bullet·Blitz·Rapid 레이팅, 인증 및 갱신 상태",
               "사용자 입력 및 Chess.com 공개 API"
+            ],
+            [
+              "Lichess 연동",
+              "사용자명, 계정 ID, 프로필 URL·상태, Bullet·Blitz·Rapid·Classical 레이팅과 게임 수·임시 레이팅 여부",
+              "Lichess OAuth 및 공개 API"
             ],
             [
               "채팅 오버레이",
@@ -64,7 +69,8 @@ export function PrivacyPolicyPage() {
         <p className="mt-4">
           시청자의 치지직 OAuth 토큰과 채팅 메시지 원문은 서버 데이터베이스에
           저장하지 않습니다. 스트리머의 치지직 OAuth 토큰은 채팅 세션 유지와
-          자동 갱신을 위해 암호화하여 저장합니다.
+          자동 갱신을 위해 암호화하여 저장합니다. Lichess OAuth 토큰은 계정
+          확인 직후 폐기하며 저장하지 않습니다.
         </p>
       </PolicySection>
 
@@ -76,6 +82,7 @@ export function PrivacyPolicyPage() {
             ["스트리머 OAuth 토큰", "치지직 연결 해제 또는 계정 삭제 시까지"],
             ["Chess.com 계정·레이팅", "Chess.com 연동 해제 또는 계정 삭제 시까지"],
             ["Chess.com 인증 도전 정보", "인증 완료·연동 해제 시까지 또는 만료 후 정기 정리 시까지"],
+            ["Lichess 계정·레이팅", "Lichess 연동 해제 또는 계정 삭제 시까지"],
             ["오버레이 설정", "오버레이 토큰 교체·계정 삭제 시까지"],
             ["채팅 원문", "메모리에서 오버레이 표시 시간 동안만 처리하며 서버에 저장하지 않음"],
             ["운영 로그", "최대 14일. 저장 공간 제한에 따라 더 일찍 삭제될 수 있음"]
@@ -118,6 +125,11 @@ export function PrivacyPolicyPage() {
               "미국 등 Chess.com의 처리 시설. 사용자가 연동·인증·갱신할 때 HTTPS API로 전송되며 제공업체 정책에 따라 처리"
             ],
             [
+              "Lichess.org",
+              "Lichess 계정 소유 확인 및 레이팅 조회: OAuth 코드·임시 토큰, 사용자명과 공개 프로필 조회 요청",
+              "Lichess의 처리 시설. 사용자가 연동·갱신할 때 HTTPS API로 전송되며 임시 토큰은 확인 직후 폐기"
+            ],
+            [
               "Google Fonts 및 jsDelivr",
               "웹폰트 제공: IP 주소, 요청 URL, 브라우저·운영체제 정보와 리퍼러",
               "미국 등 제공업체의 처리 시설. 폰트를 불러올 때 전송되며 제공업체 정책에 따라 처리"
@@ -130,7 +142,7 @@ export function PrivacyPolicyPage() {
           ]}
         />
         <p className="mt-4">
-          사용자는 Chess.com 연동을 하지 않거나 브라우저에서 외부 폰트 요청을
+          사용자는 Chess.com·Lichess 연동을 하지 않거나 브라우저에서 외부 폰트 요청을
           차단할 수 있습니다. 다만 Firebase 인증 처리를 거부하면 EloBadge 계정
           기능을 이용할 수 없습니다.
         </p>
@@ -149,7 +161,7 @@ export function PrivacyPolicyPage() {
       <PolicySection title="7. 정보주체의 권리와 행사 방법">
         <p>
           이용자는 자신의 개인정보에 대해 열람, 정정, 삭제, 처리정지 및 동의
-          철회를 요청할 수 있습니다. Chess.com 연동 해제, 치지직 연결 해제와
+          철회를 요청할 수 있습니다. Chess.com·Lichess 연동 해제, 치지직 연결 해제와
           EloBadge 계정 삭제는 로그인 후 각 설정 화면에서 직접 수행할 수
           있습니다. 그 밖의 요청은 아래 이메일로 접수합니다.
         </p>

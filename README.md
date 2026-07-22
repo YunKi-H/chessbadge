@@ -37,7 +37,7 @@ own route:
 ```text
 /                       Streamer/viewer entry point
 /streamer               Chzzk connection and OBS overlay management
-/viewer                 Chzzk login and Chess.com account management
+/viewer                 Chzzk login and Chess.com/Lichess account management
 /auth/chzzk/callback     Shared OAuth completion screen
 /overlay/:publicToken    Minimal, transparent OBS browser source
 ```
@@ -213,6 +213,22 @@ requests serially, and retries failures with capped exponential backoff without
 removing the last valid badge. Firestore leases prevent duplicate refreshes.
 Viewers can also request a refresh from the account page once every five minutes;
 the cooldown is persisted in Firestore.
+
+## Lichess Rating Link
+
+The viewer page starts a Lichess OAuth authorization-code flow with PKCE and no
+requested scopes. The server keeps the one-time state and PKCE verifier in
+memory for ten minutes. At the callback it exchanges the code, reads
+`/api/account` to prove ownership, stores the public Bullet, Blitz, Rapid, and
+Classical ratings, and immediately revokes the temporary access token. Lichess
+tokens are never persisted in Firestore.
+
+The highest available standard rating becomes the active chat badge. Lichess
+provisional ratings preserve their provisional marker. A public profile request
+supports manual refresh with a persisted five-minute cooldown. Disconnecting
+deletes the account and all four rating documents. When both providers are
+connected, the most recently verified provider is active; refreshing the
+inactive provider does not replace the active badge.
 
 ## First Milestone
 

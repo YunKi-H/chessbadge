@@ -198,6 +198,10 @@ export async function completeChessComLocationVerification(
       ratingRefreshFailureCount: 0,
       updatedAt: now
     });
+    transaction.update(userRef, {
+      activeChessProvider: "chesscom",
+      updatedAt: now
+    });
     const chzzkChannelId = uid.startsWith("chzzk:") ? uid.slice(6) : null;
 
     if (chzzkChannelId) {

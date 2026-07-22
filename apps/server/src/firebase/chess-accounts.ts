@@ -72,11 +72,15 @@ export async function disconnectChessComAccount(
     for (const ratingRef of ratingRefs) {
       transaction.delete(ratingRef);
     }
+    const lichessIsActive = userSnapshot.data()?.activeChessProvider === "lichess";
     transaction.update(userRef, {
       "chessAccountIds.chesscom": FieldValue.delete(),
+      ...(lichessIsActive ? {} : { activeChessProvider: FieldValue.delete() }),
       updatedAt: now
     });
-    transaction.update(chzzkAccountRef, { badge: null, updatedAt: now });
+    if (!lichessIsActive) {
+      transaction.update(chzzkAccountRef, { badge: null, updatedAt: now });
+    }
 
     if (challengeSnapshot.exists) {
       transaction.delete(challengeRef);
@@ -177,7 +181,7 @@ export async function saveUnverifiedChessComAccount(
       },
       { merge: true }
     );
-    if (chzzkChannelId) {
+    if (chzzkChannelId && userSnapshot.data()?.activeChessProvider !== "lichess") {
       transaction.set(
         db.collection("chzzkAccounts").doc(chzzkChannelId),
         {

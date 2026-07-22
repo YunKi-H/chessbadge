@@ -80,6 +80,10 @@ openssl rand -base64 32
 Use the generated value for `CHZZK_TOKEN_ENCRYPTION_KEY`. Do not rotate this key
 after streamer tokens have been stored unless every streamer will log in again.
 
+Set `LICHESS_CLIENT_ID=elobadge.com` and
+`LICHESS_REDIRECT_URI=https://elobadge.com/api/auth/lichess/callback` for the
+Lichess OAuth PKCE flow. Lichess public clients do not use a client secret.
+
 Install the repository's journal retention policy before starting the
 containers. This dedicated Lightsail host keeps system and container journal
 entries for at most 14 days, rotates journal files daily, and caps persistent

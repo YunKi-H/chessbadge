@@ -14,7 +14,10 @@ export async function ensureHighestChessComBadge(
     const userSnapshot = await transaction.get(userRef);
     const accountId = userSnapshot.data()?.chessAccountIds?.chesscom;
 
-    if (typeof accountId !== "string") {
+    if (
+      typeof accountId !== "string" ||
+      userSnapshot.data()?.activeChessProvider === "lichess"
+    ) {
       return false;
     }
 

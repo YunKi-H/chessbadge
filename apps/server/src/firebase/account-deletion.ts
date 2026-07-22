@@ -3,6 +3,7 @@ import { getFirebaseAuth, getFirestoreDb } from "./admin.js";
 
 const MAX_BATCH_DELETES = 400;
 const CHESS_COM_RATING_SPEEDS = ["bullet", "blitz", "rapid"] as const;
+const LICHESS_RATING_SPEEDS = ["bullet", "blitz", "rapid", "classical"] as const;
 
 export interface DeletedUserData {
   overlayTokens: string[];
@@ -20,12 +21,14 @@ export async function deleteUserFirestoreData(
     userRef.get(),
     db.collection("overlays").where("streamerUid", "==", uid).get()
   ]);
-  const accountId = userSnapshot.data()?.chessAccountIds?.chesscom;
+  const chessAccountIds = userSnapshot.data()?.chessAccountIds;
   const dependentRefs: DocumentReference[] = overlaysSnapshot.docs.map(
     (document) => document.ref
   );
 
-  if (typeof accountId === "string") {
+  const chessComAccountId = chessAccountIds?.chesscom;
+  if (typeof chessComAccountId === "string") {
+    const accountId = chessComAccountId;
     const accountRef = db.collection("chessAccounts").doc(accountId);
     const challengeRef = db
       .collection("chessVerificationChallenges")
@@ -46,6 +49,24 @@ export async function deleteUserFirestoreData(
 
     if (challengeSnapshot.data()?.uid === uid) {
       dependentRefs.push(challengeRef);
+    }
+  }
+
+  const lichessAccountId = chessAccountIds?.lichess;
+  if (typeof lichessAccountId === "string") {
+    const accountRef = db.collection("chessAccounts").doc(lichessAccountId);
+    const accountSnapshot = await accountRef.get();
+
+    if (
+      accountSnapshot.data()?.uid === uid &&
+      accountSnapshot.data()?.provider === "lichess"
+    ) {
+      dependentRefs.push(
+        ...LICHESS_RATING_SPEEDS.map((speed) =>
+          accountRef.collection("ratings").doc(speed)
+        ),
+        accountRef
+      );
     }
   }
 

@@ -1,5 +1,6 @@
 import { UserRound } from "lucide-react";
 import { ChessComAccountSettings } from "./ChessComAccountSettings";
+import { LichessAccountSettings } from "./LichessAccountSettings";
 import { AccountDeletion } from "./AccountDeletion";
 
 export function ViewerPage() {
@@ -13,6 +14,7 @@ export function ViewerPage() {
         <h1 className="mt-2 text-2xl font-semibold text-white">체스 계정</h1>
       </header>
       <ChessComAccountSettings />
+      <LichessAccountSettings />
       <AccountDeletion />
     </div>
   );

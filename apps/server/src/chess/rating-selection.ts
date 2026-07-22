@@ -1,14 +1,19 @@
 import type { ChessComRating } from "./chesscom/client.js";
+import type { LichessRating } from "./lichess/client.js";
 
-const speedPriority: Record<ChessComRating["speed"], number> = {
+const speedPriority = {
   bullet: 1,
   blitz: 2,
-  rapid: 3
-};
+  rapid: 3,
+  classical: 4
+} as const;
 
-export function getHighestChessComRating<T extends Pick<ChessComRating, "speed" | "value">>(
-  ratings: T[]
-): T | null {
+type SupportedRating = Pick<
+  ChessComRating | LichessRating,
+  "speed" | "value"
+>;
+
+export function getHighestRating<T extends SupportedRating>(ratings: T[]): T | null {
   return ratings.reduce<T | null>((highest, rating) => {
     if (!highest || rating.value > highest.value) {
       return rating;
@@ -23,4 +28,10 @@ export function getHighestChessComRating<T extends Pick<ChessComRating, "speed" 
 
     return highest;
   }, null);
+}
+
+export function getHighestChessComRating<T extends Pick<ChessComRating, "speed" | "value">>(
+  ratings: T[]
+): T | null {
+  return getHighestRating(ratings);
 }
