@@ -1,8 +1,15 @@
-import type { ChessProvider } from "@elobadge/core";
-import { FieldValue } from "firebase-admin/firestore";
+import type {
+  ChessBadges,
+  ChessProvider,
+  ChessSpeed,
+  RatingBadge
+} from "@elobadge/core";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { getHighestRating } from "../chess/rating-selection.js";
 import { getFirestoreDb } from "./admin.js";
 import {
   getChzzkChessBadgeState,
+  parseChzzkChessBadgeState,
   type ChzzkChessBadgeState
 } from "./chess-badges.js";
 
@@ -17,15 +24,61 @@ export async function getChessBadgePreference(
   uid: string,
   chzzkChannelId: string
 ): Promise<ChzzkChessBadgeState> {
-  const snapshot = await getFirestoreDb()
-    .collection("chzzkAccounts")
-    .doc(chzzkChannelId)
-    .get();
+  return reconcileLinkedChessBadges(uid, chzzkChannelId);
+}
+
+async function reconcileLinkedChessBadges(
+  uid: string,
+  chzzkChannelId: string
+): Promise<ChzzkChessBadgeState> {
+  const db = getFirestoreDb();
+  const chzzkRef = db.collection("chzzkAccounts").doc(chzzkChannelId);
+  const [snapshot, userSnapshot] = await Promise.all([
+    chzzkRef.get(),
+    db.collection("users").doc(uid).get()
+  ]);
 
   if (snapshot.data()?.uid !== uid) {
     throw new ChessBadgePreferenceError("identity_mismatch");
   }
-  return getChzzkChessBadgeState(chzzkChannelId);
+
+  const state = parseChzzkChessBadgeState(snapshot.data());
+  const accountIds = userSnapshot.data()?.chessAccountIds;
+  const linkedBadges = await Promise.all(
+    (["chesscom", "lichess"] as const).map(async (provider) => {
+      const accountId = accountIds?.[provider];
+      return typeof accountId === "string"
+        ? deriveLinkedBadge(uid, accountId, provider)
+        : null;
+    })
+  );
+  const badges: ChessBadges = { ...state.badges };
+  for (const badge of linkedBadges) {
+    if (badge) {
+      badges[badge.provider] = badge;
+    }
+  }
+
+  const preferredProvider =
+    state.preferredProvider && badges[state.preferredProvider]
+      ? state.preferredProvider
+      : badges.chesscom
+        ? "chesscom"
+        : badges.lichess
+          ? "lichess"
+          : null;
+  const reconciled = { badges, preferredProvider };
+
+  if (!sameBadgeState(state, reconciled)) {
+    await chzzkRef.update({
+      badges,
+      preferredChessProvider: preferredProvider ?? FieldValue.delete(),
+      badge: preferredProvider ? badges[preferredProvider]! : null,
+      updatedAt: FieldValue.serverTimestamp()
+    });
+  }
+
+  return reconciled;
 }
 
 export async function updateChessBadgePreference(
@@ -63,4 +116,81 @@ export async function updateChessBadgePreference(
   });
 
   return getChzzkChessBadgeState(chzzkChannelId);
+}
+
+async function deriveLinkedBadge(
+  uid: string,
+  accountId: string,
+  provider: ChessProvider
+): Promise<RatingBadge | null> {
+  const accountRef = getFirestoreDb().collection("chessAccounts").doc(accountId);
+  const [accountSnapshot, ratingsSnapshot] = await Promise.all([
+    accountRef.get(),
+    accountRef.collection("ratings").get()
+  ]);
+  const account = accountSnapshot.data();
+  if (
+    account?.uid !== uid ||
+    account.provider !== provider ||
+    !(account.verifiedAt instanceof Timestamp)
+  ) {
+    return null;
+  }
+
+  const highest = getHighestRating(
+    ratingsSnapshot.docs.flatMap((document) => {
+      const rating = document.data();
+      const speed = document.id;
+      if (
+        !isProviderSpeed(provider, speed) ||
+        typeof rating.value !== "number"
+      ) {
+        return [];
+      }
+      return [{
+        speed,
+        value: rating.value,
+        provisional: provider === "lichess" && rating.provisional === true
+      }];
+    })
+  );
+
+  return highest
+    ? { provider, ...highest }
+    : null;
+}
+
+function isProviderSpeed(
+  provider: ChessProvider,
+  speed: string
+): speed is ChessSpeed {
+  return (
+    speed === "bullet" ||
+    speed === "blitz" ||
+    speed === "rapid" ||
+    (provider === "lichess" && speed === "classical")
+  );
+}
+
+function sameBadgeState(
+  left: ChzzkChessBadgeState,
+  right: ChzzkChessBadgeState
+): boolean {
+  return (
+    left.preferredProvider === right.preferredProvider &&
+    sameBadge(left.badges.chesscom, right.badges.chesscom) &&
+    sameBadge(left.badges.lichess, right.badges.lichess)
+  );
+}
+
+function sameBadge(
+  left: RatingBadge | undefined,
+  right: RatingBadge | undefined
+): boolean {
+  return (
+    left?.provider === right?.provider &&
+    left?.speed === right?.speed &&
+    left?.value === right?.value &&
+    left?.provisional === right?.provisional
+  );
 }

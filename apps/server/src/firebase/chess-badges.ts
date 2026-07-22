@@ -126,7 +126,12 @@ export async function getChzzkChessBadgeState(
     .collection("chzzkAccounts")
     .doc(chzzkChannelId)
     .get();
-  const data = snapshot.data();
+  return parseChzzkChessBadgeState(snapshot.data());
+}
+
+export function parseChzzkChessBadgeState(
+  data: FirebaseFirestore.DocumentData | undefined
+): ChzzkChessBadgeState {
   const badges: ChessBadges = {};
   const storedBadges = data?.badges;
 

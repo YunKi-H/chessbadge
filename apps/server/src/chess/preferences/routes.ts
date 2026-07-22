@@ -22,10 +22,12 @@ export async function registerChessPreferenceRoutes(app: FastifyInstance) {
         return reply.code(403).send({ error: "치지직 계정 정보가 없습니다." });
       }
       try {
-        return {
-          ok: true,
-          ...(await getChessBadgePreference(user.uid, user.chzzkChannelId))
-        };
+        const state = await getChessBadgePreference(
+          user.uid,
+          user.chzzkChannelId
+        );
+        ratingBadgeCache.invalidate(user.chzzkChannelId);
+        return { ok: true, ...state };
       } catch (error) {
         return sendPreferenceError(error, reply);
       }

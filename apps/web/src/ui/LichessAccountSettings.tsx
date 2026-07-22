@@ -140,9 +140,17 @@ export function LichessAccountSettings() {
     ? Date.parse(account.manualRefreshAvailableAt)
     : 0;
   const cooldownMs = Math.max(0, availableAt - clock);
+  const ratingGridColumns =
+    account?.ratings.length === 2
+      ? "sm:grid-cols-2"
+      : account?.ratings.length === 3
+        ? "sm:grid-cols-3"
+        : account && account.ratings.length >= 4
+          ? "sm:grid-cols-2 lg:grid-cols-4"
+          : "grid-cols-1";
 
   return (
-    <section className="border-b border-white/10 py-8">
+    <section className="py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -229,7 +237,7 @@ export function LichessAccountSettings() {
             <CheckCircle2 className="shrink-0" size={18} />
             <p>Lichess 계정 소유 인증이 완료되었습니다.</p>
           </div>
-          <dl className="mt-5 grid grid-cols-1 gap-px overflow-hidden rounded-md bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+          <dl className={`mt-5 grid gap-px overflow-hidden rounded-md bg-white/10 ${ratingGridColumns}`}>
             {account.ratings.length > 0 ? account.ratings.map((rating) => (
               <div key={rating.speed} className="bg-slate-900 px-4 py-4">
                 <dt className="text-sm text-slate-400">

@@ -32,6 +32,7 @@ import {
   claimManualChessComRatingRefresh,
   completeChessComRatingRefresh
 } from "../chess-rating-refresh.js";
+import { getChessBadgePreference } from "../chess-preferences.js";
 import {
   enableStreamerOverlayAccess,
   getStreamerOverlayAccess,
@@ -279,6 +280,65 @@ test("disconnect switches the badge preference to the remaining linked provider"
     (await db.collection("chzzkAccounts").doc(channelId).get()).data()?.badge,
     null
   );
+});
+
+test("badge preference restores a missing provider badge from linked accounts", async () => {
+  const uid = "chzzk:legacy-dual-viewer";
+  const channelId = "legacy-dual-viewer";
+  const chessComAccountId = "chesscom:legacy-dual";
+  const lichessAccountId = "lichess:legacy-dual";
+  const db = getFirestoreDb();
+  const chessComBadge = {
+    provider: "chesscom",
+    speed: "rapid",
+    value: 1750,
+    provisional: false
+  } as const;
+
+  await Promise.all([
+    db.collection("users").doc(uid).set({
+      chessAccountIds: {
+        chesscom: chessComAccountId,
+        lichess: lichessAccountId
+      }
+    }),
+    db.collection("chzzkAccounts").doc(channelId).set({
+      uid,
+      badges: { chesscom: chessComBadge },
+      preferredChessProvider: "chesscom",
+      badge: chessComBadge
+    }),
+    db.collection("chessAccounts").doc(chessComAccountId).set({
+      uid,
+      provider: "chesscom",
+      verifiedAt: Timestamp.now()
+    }),
+    db.collection("chessAccounts").doc(lichessAccountId).set({
+      uid,
+      provider: "lichess",
+      verifiedAt: Timestamp.now()
+    }),
+    db.collection("chessAccounts").doc(chessComAccountId)
+      .collection("ratings").doc("rapid").set({ value: 1750 }),
+    db.collection("chessAccounts").doc(lichessAccountId)
+      .collection("ratings").doc("rapid").set({
+        value: 1900,
+        provisional: false
+      })
+  ]);
+
+  assert.deepEqual(await getChessBadgePreference(uid, channelId), {
+    badges: {
+      chesscom: chessComBadge,
+      lichess: {
+        provider: "lichess",
+        speed: "rapid",
+        value: 1900,
+        provisional: false
+      }
+    },
+    preferredProvider: "chesscom"
+  });
 });
 
 test("verification cleanup deletes only expired challenges", async () => {

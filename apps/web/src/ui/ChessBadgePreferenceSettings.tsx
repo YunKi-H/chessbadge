@@ -51,13 +51,6 @@ export function ChessBadgePreferenceControl({
   if (!state && !error) {
     return null;
   }
-  const available = (["chesscom", "lichess"] as const).filter(
-    (provider) => state?.badges[provider]
-  );
-  if (available.length < 2 && !error) {
-    return null;
-  }
-
   const select = async (provider: ChessProvider) => {
     setSaving(true);
     setError(null);
