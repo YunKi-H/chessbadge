@@ -8,6 +8,7 @@ import {
   getChessComRefreshRetryAt
 } from "../chess/chesscom/rating-refresh-policy.js";
 import { getFirestoreDb } from "./admin.js";
+import { listDueRatingRefreshAccountIds } from "./rating-refresh-queries.js";
 
 const SUPPORTED_SPEEDS = ["bullet", "blitz", "rapid"] as const;
 
@@ -41,43 +42,7 @@ export async function listDueChessComRatingRefreshes(
   now: Date,
   limit = 20
 ): Promise<string[]> {
-  const db = getFirestoreDb();
-  const snapshot = await db
-    .collection("chessAccounts")
-    .where("nextRatingRefreshAt", "<=", Timestamp.fromDate(now))
-    .orderBy("nextRatingRefreshAt")
-    .limit(limit)
-    .get();
-  const accountIds = snapshot.docs.map((document) => document.id);
-
-  if (accountIds.length >= limit) {
-    return accountIds;
-  }
-
-  // Existing verified accounts predate the refresh scheduler and have no due date.
-  const legacySnapshot = await db
-    .collection("chessAccounts")
-    .where("provider", "==", "chesscom")
-    .limit(limit * 5)
-    .get();
-
-  for (const document of legacySnapshot.docs) {
-    const data = document.data();
-
-    if (
-      accountIds.length >= limit ||
-      accountIds.includes(document.id) ||
-      data.nextRatingRefreshAt instanceof Timestamp ||
-      !(data.verifiedAt instanceof Timestamp) ||
-      typeof data.uid !== "string"
-    ) {
-      continue;
-    }
-
-    accountIds.push(document.id);
-  }
-
-  return accountIds;
+  return listDueRatingRefreshAccountIds("chesscom", now, limit);
 }
 
 export async function claimManualChessComRatingRefresh(

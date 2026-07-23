@@ -30,8 +30,10 @@ import { deleteExpiredChessVerificationChallenges } from "../chess-verification-
 import {
   ChessRatingRefreshError,
   claimManualChessComRatingRefresh,
-  completeChessComRatingRefresh
+  completeChessComRatingRefresh,
+  listDueChessComRatingRefreshes
 } from "../chess-rating-refresh.js";
+import { listDueLichessRatingRefreshes } from "../lichess-rating-refresh.js";
 import { getChessBadgePreference } from "../chess-preferences.js";
 import {
   enableStreamerOverlayAccess,
@@ -401,6 +403,47 @@ test("concurrent badge reconciliation does not restore a disconnected account", 
       .data()?.badges?.lichess,
     undefined
   );
+});
+
+test("rating refresh queries isolate providers and paginate legacy accounts", async () => {
+  const db = getFirestoreDb();
+  const accounts = db.collection("chessAccounts");
+  const now = new Date("2026-07-23T00:00:00.000Z");
+  const batch = db.batch();
+
+  batch.set(accounts.doc("chesscom:due"), {
+    provider: "chesscom",
+    nextRatingRefreshAt: Timestamp.fromMillis(now.getTime() - 1)
+  });
+  batch.set(accounts.doc("lichess:due"), {
+    provider: "lichess",
+    nextRatingRefreshAt: Timestamp.fromMillis(now.getTime() - 2)
+  });
+  for (let index = 0; index < 101; index += 1) {
+    const suffix = index.toString().padStart(3, "0");
+    batch.set(accounts.doc(`chesscom:scheduled-${suffix}`), {
+      provider: "chesscom",
+      nextRatingRefreshAt: Timestamp.fromMillis(now.getTime() + index + 1)
+    });
+    batch.set(accounts.doc(`lichess:scheduled-${suffix}`), {
+      provider: "lichess",
+      nextRatingRefreshAt: Timestamp.fromMillis(now.getTime() + index + 1)
+    });
+  }
+  batch.set(accounts.doc("chesscom:zz-legacy"), {
+    provider: "chesscom",
+    uid: "chzzk:legacy-refresh",
+    verifiedAt: Timestamp.fromMillis(now.getTime() - 10_000)
+  });
+  await batch.commit();
+
+  assert.deepEqual(await listDueChessComRatingRefreshes(now, 2), [
+    "chesscom:due",
+    "chesscom:zz-legacy"
+  ]);
+  assert.deepEqual(await listDueLichessRatingRefreshes(now, 1), [
+    "lichess:due"
+  ]);
 });
 
 test("verification cleanup deletes only expired challenges", async () => {

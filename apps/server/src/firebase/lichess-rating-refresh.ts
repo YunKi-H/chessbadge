@@ -8,6 +8,7 @@ import {
   LICHESS_REFRESH_LEASE_MS
 } from "../chess/lichess/rating-refresh-policy.js";
 import { getFirestoreDb } from "./admin.js";
+import { listDueRatingRefreshAccountIds } from "./rating-refresh-queries.js";
 
 const SUPPORTED_SPEEDS = ["bullet", "blitz", "rapid", "classical"] as const;
 
@@ -40,48 +41,7 @@ export async function listDueLichessRatingRefreshes(
   now: Date,
   limit = 20
 ): Promise<string[]> {
-  const db = getFirestoreDb();
-  const snapshot = await db
-    .collection("chessAccounts")
-    .where("provider", "==", "lichess")
-    .limit(limit * 5)
-    .get();
-  const accountIds = snapshot.docs
-    .filter((document) => {
-      const next = document.data().nextRatingRefreshAt;
-      return next instanceof Timestamp && next.toMillis() <= now.getTime();
-    })
-    .sort((left, right) => {
-      const leftAt = left.data().nextRatingRefreshAt as Timestamp;
-      const rightAt = right.data().nextRatingRefreshAt as Timestamp;
-      return leftAt.toMillis() - rightAt.toMillis();
-    })
-    .slice(0, limit)
-    .map((document) => document.id);
-
-  if (accountIds.length >= limit) {
-    return accountIds;
-  }
-
-  const legacy = await db
-    .collection("chessAccounts")
-    .where("provider", "==", "lichess")
-    .limit(limit * 5)
-    .get();
-  for (const document of legacy.docs) {
-    const data = document.data();
-    if (
-      accountIds.length >= limit ||
-      accountIds.includes(document.id) ||
-      data.nextRatingRefreshAt instanceof Timestamp ||
-      !(data.verifiedAt instanceof Timestamp) ||
-      typeof data.uid !== "string"
-    ) {
-      continue;
-    }
-    accountIds.push(document.id);
-  }
-  return accountIds;
+  return listDueRatingRefreshAccountIds("lichess", now, limit);
 }
 
 export async function claimManualLichessRatingRefresh(
