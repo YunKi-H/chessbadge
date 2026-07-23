@@ -231,6 +231,19 @@ connected, `chzzkAccounts.badges` stores both ratings and
 `preferredChessProvider` is the only viewer preference. Refreshing an account
 updates that provider's badge without changing the viewer's selection.
 
+Overlay documents created before the current appearance schema require a
+one-time backfill. The command runs as a dry run unless execution and the
+Firebase project ID are supplied:
+
+```bash
+docker compose exec app node apps/server/dist/scripts/migrate-overlay-appearances.js
+docker compose exec app node apps/server/dist/scripts/migrate-overlay-appearances.js \
+  --execute --confirm-project=<FIREBASE_PROJECT_ID>
+```
+
+After a final dry run returns zero overlays, the temporary appearance fallback
+and migration command can be removed.
+
 ## First Milestone
 
 The first product risk to remove is Chzzk chat ingestion:
