@@ -24,7 +24,9 @@ if (execute) {
 } else {
   console.log("No document was changed.");
   console.log(
-    `To execute: pnpm chess-badges:migrate --execute --confirm-project=${projectId}`
+    "To execute this build: " +
+      "node apps/server/dist/scripts/migrate-chess-badge-data.js " +
+      `--execute --confirm-project=${projectId}`
   );
 }
 

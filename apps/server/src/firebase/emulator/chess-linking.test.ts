@@ -358,6 +358,9 @@ test("legacy chess badge fields migrate to the canonical model", async () => {
     db.collection("chzzkAccounts").doc(channelId).set({
       uid,
       badge: legacyBadge
+    }),
+    db.collection("chzzkAccounts").doc("account-without-chess-badge").set({
+      uid: "chzzk:account-without-chess-badge"
     })
   ]);
 

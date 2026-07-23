@@ -37,11 +37,7 @@ export async function migrateLegacyChessBadgeData(
 
     for (const document of snapshot.docs) {
       const data = document.data();
-      if (
-        !Object.hasOwn(data, "badge") &&
-        data.badges &&
-        typeof data.badges === "object"
-      ) {
+      if (!Object.hasOwn(data, "badge")) {
         continue;
       }
 

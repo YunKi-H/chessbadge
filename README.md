@@ -234,11 +234,22 @@ updates that provider's badge without changing the viewer's selection.
 Legacy deployments stored the selected badge in `chzzkAccounts.badge` and the
 provider in `users.activeChessProvider`. The migration CLI converts those fields
 to the canonical model and is safe to run more than once. It performs a dry run
-unless execution and the Firebase project ID are both supplied:
+unless execution and the Firebase project ID are both supplied. In a local
+development checkout, run:
 
 ```bash
 pnpm chess-badges:migrate
 pnpm chess-badges:migrate --execute --confirm-project=<FIREBASE_PROJECT_ID>
+```
+
+The production image already contains installed dependencies and runs as an
+unprivileged user. Do not run `pnpm install` inside the app container. From the
+`deploy` directory on the server, invoke the compiled migration directly:
+
+```bash
+docker compose exec app node apps/server/dist/scripts/migrate-chess-badge-data.js
+docker compose exec app node apps/server/dist/scripts/migrate-chess-badge-data.js \
+  --execute --confirm-project=<FIREBASE_PROJECT_ID>
 ```
 
 ## First Milestone
