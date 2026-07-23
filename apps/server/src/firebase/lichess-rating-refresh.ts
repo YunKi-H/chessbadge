@@ -9,6 +9,10 @@ import {
 } from "../chess/lichess/rating-refresh-policy.js";
 import { getFirestoreDb } from "./admin.js";
 import { listDueRatingRefreshAccountIds } from "./rating-refresh-queries.js";
+import {
+  parseChzzkChessBadgeState,
+  selectPreferredChessProvider
+} from "./chess-badges.js";
 
 const SUPPORTED_SPEEDS = ["bullet", "blitz", "rapid", "classical"] as const;
 
@@ -154,12 +158,21 @@ export async function completeLichessRatingRefresh(
             provisional: highest.provisional
           }
         : null;
-      const preferred = chzzkSnapshot.data()?.preferredChessProvider;
+      const currentState = parseChzzkChessBadgeState(chzzkSnapshot.data());
+      const badges = { ...currentState.badges };
+      if (badge) {
+        badges.lichess = badge;
+      } else {
+        delete badges.lichess;
+      }
+      const preferredProvider = selectPreferredChessProvider(
+        badges,
+        currentState.preferredProvider
+      );
       transaction.set(chzzkRef, {
-        badges: { lichess: badge },
-        ...(preferred === "lichess" || (!preferred && !chzzkSnapshot.data()?.badges?.chesscom)
-          ? { badge }
-          : {}),
+        badges,
+        preferredChessProvider: preferredProvider ?? FieldValue.delete(),
+        badge: FieldValue.delete(),
         updatedAt: Timestamp.fromDate(now)
       }, { merge: true });
     }

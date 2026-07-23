@@ -79,7 +79,7 @@ async function reconcileLinkedChessBadges(
       transaction.update(chzzkRef, {
         badges,
         preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-        badge: preferredProvider ? badges[preferredProvider]! : null,
+        badge: FieldValue.delete(),
         updatedAt: FieldValue.serverTimestamp()
       });
     }
@@ -103,21 +103,17 @@ export async function updateChessBadgePreference(
       throw new ChessBadgePreferenceError("identity_mismatch");
     }
 
-    const providerBadge = data.badges?.[provider];
-    const legacyBadge = data.badge;
-    const badge = providerBadge?.provider === provider
-      ? providerBadge
-      : legacyBadge?.provider === provider
-        ? legacyBadge
-        : null;
+    const state = parseChzzkChessBadgeState(data);
+    const badge = state.badges[provider];
 
     if (!badge) {
       throw new ChessBadgePreferenceError("badge_unavailable");
     }
 
     transaction.update(ref, {
+      badges: state.badges,
       preferredChessProvider: provider,
-      badge,
+      badge: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp()
     });
   });

@@ -19,10 +19,7 @@ export async function ensureHighestChessComBadge(
     const userSnapshot = await transaction.get(userRef);
     const accountId = userSnapshot.data()?.chessAccountIds?.chesscom;
 
-    if (
-      typeof accountId !== "string" ||
-      userSnapshot.data()?.activeChessProvider === "lichess"
-    ) {
+    if (typeof accountId !== "string") {
       return false;
     }
 
@@ -75,27 +72,31 @@ export async function ensureHighestChessComBadge(
     }
 
     const now = FieldValue.serverTimestamp();
+    const chessComBadge = {
+      provider: "chesscom" as const,
+      speed: highestRating.speed,
+      value: highestRating.value,
+      provisional: false
+    };
+    const currentState = parseChzzkChessBadgeState(chzzkAccountSnapshot.data());
+    const badges = { ...currentState.badges, chesscom: chessComBadge };
     transaction.update(accountRef, {
       selectedSpeed: highestRating.speed,
+      updatedAt: now
+    });
+    transaction.update(userRef, {
+      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     });
     transaction.set(
       chzzkAccountRef,
       {
-        badges: {
-          chesscom: {
-            provider: "chesscom",
-            speed: highestRating.speed,
-            value: highestRating.value,
-            provisional: false
-          }
-        },
-        badge: {
-          provider: "chesscom",
-          speed: highestRating.speed,
-          value: highestRating.value,
-          provisional: false
-        },
+        badges,
+        preferredChessProvider: selectPreferredChessProvider(
+          badges,
+          currentState.preferredProvider
+        ),
+        badge: FieldValue.delete(),
         updatedAt: now
       },
       { merge: true }
@@ -151,13 +152,27 @@ export function parseChzzkChessBadgeState(
     badges[legacyBadge.provider] = legacyBadge;
   }
 
-  const preferredProvider =
+  const requestedProvider =
     data?.preferredChessProvider === "chesscom" ||
     data?.preferredChessProvider === "lichess"
       ? data.preferredChessProvider
       : legacyBadge?.provider ?? null;
+  const preferredProvider = selectPreferredChessProvider(
+    badges,
+    requestedProvider
+  );
 
   return { badges, preferredProvider };
+}
+
+export function selectPreferredChessProvider(
+  badges: ChessBadges,
+  requestedProvider: ChessProvider | null | undefined
+): ChessProvider | null {
+  if (requestedProvider && badges[requestedProvider]) {
+    return requestedProvider;
+  }
+  return badges.chesscom ? "chesscom" : badges.lichess ? "lichess" : null;
 }
 
 function parseRatingBadge(value: unknown): RatingBadge | null {

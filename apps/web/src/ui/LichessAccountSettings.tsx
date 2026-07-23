@@ -16,7 +16,10 @@ import {
   type LichessAccount
 } from "../api/client";
 import { getFirebaseClientAuth } from "../firebase/client";
-import { ChessBadgePreferenceControl } from "./ChessBadgePreferenceSettings";
+import {
+  ChessBadgePreferenceControl
+} from "./ChessBadgePreferenceSettings";
+import type { ChessBadgePreferenceController } from "./useChessBadgePreference";
 
 type State =
   | { status: "loading" }
@@ -31,7 +34,11 @@ const speedLabels = {
   classical: "Classical"
 } as const;
 
-export function LichessAccountSettings() {
+export function LichessAccountSettings({
+  badgePreference
+}: {
+  badgePreference: ChessBadgePreferenceController;
+}) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -90,7 +97,7 @@ export function LichessAccountSettings() {
     try {
       const refreshed = await refreshLichessAccount();
       setState({ status: "ready", account: refreshed });
-      notifyChessBadgesChanged();
+      void badgePreference.refresh();
       if (refreshed.ratingsFetchedAt) {
         setClock(Date.parse(refreshed.ratingsFetchedAt));
       }
@@ -109,7 +116,7 @@ export function LichessAccountSettings() {
     try {
       await disconnectLichessAccount();
       setState({ status: "ready", account: null });
-      notifyChessBadgesChanged();
+      void badgePreference.refresh();
     } catch (error) {
       setError(error);
     } finally {
@@ -155,7 +162,10 @@ export function LichessAccountSettings() {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-semibold text-white">Lichess 계정</h2>
-            <ChessBadgePreferenceControl provider="lichess" />
+            <ChessBadgePreferenceControl
+              provider="lichess"
+              preference={badgePreference}
+            />
           </div>
           <p className="mt-1 text-sm text-slate-400">
             Bullet, Blitz, Rapid, Classical 레이팅을 불러옵니다.
@@ -272,9 +282,6 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "요청을 처리하지 못했습니다.";
 }
 
-function notifyChessBadgesChanged() {
-  window.dispatchEvent(new Event("elobadge:chess-badges-changed"));
-}
 
 function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", {

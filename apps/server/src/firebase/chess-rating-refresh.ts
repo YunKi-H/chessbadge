@@ -9,6 +9,10 @@ import {
 } from "../chess/chesscom/rating-refresh-policy.js";
 import { getFirestoreDb } from "./admin.js";
 import { listDueRatingRefreshAccountIds } from "./rating-refresh-queries.js";
+import {
+  parseChzzkChessBadgeState,
+  selectPreferredChessProvider
+} from "./chess-badges.js";
 
 const SUPPORTED_SPEEDS = ["bullet", "blitz", "rapid"] as const;
 
@@ -103,16 +107,14 @@ export async function completeChessComRatingRefresh(
 ): Promise<boolean> {
   const db = getFirestoreDb();
   const accountRef = db.collection("chessAccounts").doc(claim.accountId);
-  const userRef = db.collection("users").doc(claim.uid);
   const chzzkAccountRef = db
     .collection("chzzkAccounts")
     .doc(claim.chzzkChannelId);
 
   return db.runTransaction(async (transaction) => {
-    const [accountSnapshot, chzzkAccountSnapshot, userSnapshot] = await Promise.all([
+    const [accountSnapshot, chzzkAccountSnapshot] = await Promise.all([
       transaction.get(accountRef),
-      transaction.get(chzzkAccountRef),
-      transaction.get(userRef)
+      transaction.get(chzzkAccountRef)
     ]);
     const account = accountSnapshot.data();
 
@@ -129,6 +131,25 @@ export async function completeChessComRatingRefresh(
     }
 
     const highestRating = getHighestChessComRating(player.ratings);
+    const chessComBadge = highestRating
+      ? {
+          provider: "chesscom" as const,
+          speed: highestRating.speed,
+          value: highestRating.value,
+          provisional: false
+        }
+      : null;
+    const currentState = parseChzzkChessBadgeState(chzzkAccountSnapshot.data());
+    const badges = { ...currentState.badges };
+    if (chessComBadge) {
+      badges.chesscom = chessComBadge;
+    } else {
+      delete badges.chesscom;
+    }
+    const preferredProvider = selectPreferredChessProvider(
+      badges,
+      currentState.preferredProvider
+    );
     const ratingsBySpeed = new Map(
       player.ratings.map((rating) => [rating.speed, rating] as const)
     );
@@ -170,41 +191,13 @@ export async function completeChessComRatingRefresh(
     transaction.set(
       chzzkAccountRef,
       {
-        badges: {
-          chesscom: highestRating
-            ? {
-                provider: "chesscom",
-                speed: highestRating.speed,
-                value: highestRating.value,
-                provisional: false
-              }
-            : null
-        },
+        badges,
+        preferredChessProvider: preferredProvider ?? FieldValue.delete(),
+        badge: FieldValue.delete(),
         updatedAt: Timestamp.fromDate(now)
       },
       { merge: true }
     );
-
-    if (
-      chzzkAccountSnapshot.data()?.uid === claim.uid &&
-      userSnapshot.data()?.activeChessProvider !== "lichess"
-    ) {
-      transaction.set(
-        chzzkAccountRef,
-        {
-          badge: highestRating
-            ? {
-                provider: "chesscom",
-                speed: highestRating.speed,
-                value: highestRating.value,
-                provisional: false
-              }
-            : null,
-          updatedAt: Timestamp.fromDate(now)
-        },
-        { merge: true }
-      );
-    }
 
     return true;
   });

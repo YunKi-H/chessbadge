@@ -3,6 +3,10 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreDb } from "./admin.js";
 import { getHighestChessComRating } from "../chess/rating-selection.js";
 import { getNextChessComRefreshAt } from "../chess/chesscom/rating-refresh-policy.js";
+import {
+  parseChzzkChessBadgeState,
+  selectPreferredChessProvider
+} from "./chess-badges.js";
 
 const CHALLENGE_LIFETIME_MS = 48 * 60 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 10;
@@ -191,6 +195,25 @@ export async function completeChessComLocationVerification(
           : [];
       })
     );
+    const chessComBadge = highestRating
+      ? {
+          provider: "chesscom" as const,
+          speed: highestRating.speed,
+          value: highestRating.value,
+          provisional: false
+        }
+      : null;
+    const currentState = parseChzzkChessBadgeState(chzzkAccountSnapshot?.data());
+    const badges = { ...currentState.badges };
+    if (chessComBadge) {
+      badges.chesscom = chessComBadge;
+    } else {
+      delete badges.chesscom;
+    }
+    const preferredProvider = selectPreferredChessProvider(
+      badges,
+      currentState.preferredProvider
+    );
 
     const now = FieldValue.serverTimestamp();
     const verifiedAt = new Date();
@@ -206,35 +229,17 @@ export async function completeChessComLocationVerification(
       updatedAt: now
     });
     transaction.update(userRef, {
-      activeChessProvider: "chesscom",
+      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     });
     if (chzzkAccountRef) {
       transaction.set(
         chzzkAccountRef,
         {
-          badges: {
-            chesscom: highestRating
-              ? {
-                  provider: "chesscom",
-                  speed: highestRating.speed,
-                  value: highestRating.value,
-                  provisional: false
-                }
-              : null
-          },
+          badges,
           preferredChessProvider:
-            chzzkAccountSnapshot?.data()?.preferredChessProvider === "lichess"
-              ? "lichess"
-              : "chesscom",
-          badge: highestRating
-            ? {
-                provider: "chesscom",
-                speed: highestRating.speed,
-                value: highestRating.value,
-                provisional: false
-              }
-            : null,
+            preferredProvider ?? FieldValue.delete(),
+          badge: FieldValue.delete(),
           updatedAt: now
         },
         { merge: true }

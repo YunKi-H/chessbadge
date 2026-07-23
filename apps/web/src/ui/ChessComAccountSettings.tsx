@@ -21,7 +21,10 @@ import {
   type ChessComVerificationChallenge
 } from "../api/client";
 import { getFirebaseClientAuth } from "../firebase/client";
-import { ChessBadgePreferenceControl } from "./ChessBadgePreferenceSettings";
+import {
+  ChessBadgePreferenceControl
+} from "./ChessBadgePreferenceSettings";
+import type { ChessBadgePreferenceController } from "./useChessBadgePreference";
 
 type ViewState =
   | { status: "loading" }
@@ -35,7 +38,11 @@ const speedLabels: Record<ChessComAccount["ratings"][number]["speed"], string> =
   rapid: "Rapid"
 };
 
-export function ChessComAccountSettings() {
+export function ChessComAccountSettings({
+  badgePreference
+}: {
+  badgePreference: ChessBadgePreferenceController;
+}) {
   const [state, setState] = useState<ViewState>({ status: "loading" });
   const [username, setUsername] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -84,7 +91,7 @@ export function ChessComAccountSettings() {
       setState({ status: "ready", account });
       setVerification(null);
       setUsername(account.username);
-      notifyChessBadgesChanged();
+      void badgePreference.refresh();
     } catch (error) {
       setState({
         status: "error",
@@ -124,7 +131,7 @@ export function ChessComAccountSettings() {
       const verifiedAccount = await confirmChessComVerification();
       setState({ status: "ready", account: verifiedAccount });
       setVerification(null);
-      notifyChessBadgesChanged();
+      void badgePreference.refresh();
     } catch (error) {
       setVerificationError(error);
     } finally {
@@ -154,7 +161,7 @@ export function ChessComAccountSettings() {
       setUsername("");
       setVerification(null);
       setCopied(false);
-      notifyChessBadgesChanged();
+      void badgePreference.refresh();
     } catch (error) {
       setVerificationError(error);
     } finally {
@@ -173,7 +180,7 @@ export function ChessComAccountSettings() {
           ? Date.parse(refreshedAccount.ratingsFetchedAt)
           : clock
       );
-      notifyChessBadgesChanged();
+      void badgePreference.refresh();
     } catch (error) {
       setVerificationError(error);
     } finally {
@@ -231,7 +238,10 @@ export function ChessComAccountSettings() {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-semibold text-white">Chess.com 계정</h2>
-            <ChessBadgePreferenceControl provider="chesscom" />
+            <ChessBadgePreferenceControl
+              provider="chesscom"
+              preference={badgePreference}
+            />
           </div>
           <p className="mt-1 text-sm text-slate-400">
             Rapid, Blitz, Bullet 레이팅을 불러옵니다.
@@ -424,9 +434,6 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "요청을 처리하지 못했습니다.";
 }
 
-function notifyChessBadgesChanged() {
-  window.dispatchEvent(new Event("elobadge:chess-badges-changed"));
-}
 
 function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", {

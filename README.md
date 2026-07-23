@@ -227,8 +227,19 @@ The highest available standard rating becomes the active chat badge. Lichess
 provisional ratings preserve their provisional marker. A public profile request
 supports manual refresh with a persisted five-minute cooldown. Disconnecting
 deletes the account and all four rating documents. When both providers are
-connected, the most recently verified provider is active; refreshing the
-inactive provider does not replace the active badge.
+connected, `chzzkAccounts.badges` stores both ratings and
+`preferredChessProvider` is the only viewer preference. Refreshing an account
+updates that provider's badge without changing the viewer's selection.
+
+Legacy deployments stored the selected badge in `chzzkAccounts.badge` and the
+provider in `users.activeChessProvider`. The migration CLI converts those fields
+to the canonical model and is safe to run more than once. It performs a dry run
+unless execution and the Firebase project ID are both supplied:
+
+```bash
+pnpm chess-badges:migrate
+pnpm chess-badges:migrate --execute --confirm-project=<FIREBASE_PROJECT_ID>
+```
 
 ## First Milestone
 
@@ -246,7 +257,8 @@ The first product risk to remove is Chzzk chat ingestion:
 2. Enable Firebase Authentication and Cloud Firestore.
 3. Create a service account for the Fastify server.
 4. Copy `.env.example` to `.env` and fill in the Firebase values.
-5. Deploy `firestore.rules` before allowing production traffic.
+5. Deploy `firestore.rules` and `firestore.indexes.json` before allowing
+   production traffic.
 
 The existing Chzzk chat proof of concept still runs without Firebase credentials.
 Firebase is initialized lazily when an auth or database feature first uses it.

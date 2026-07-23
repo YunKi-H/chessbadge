@@ -3,6 +3,10 @@ import type { LichessPlayer, LichessRating } from "../chess/lichess/client.js";
 import { getHighestRating } from "../chess/rating-selection.js";
 import { getNextLichessRefreshAt } from "../chess/lichess/rating-refresh-policy.js";
 import { getFirestoreDb } from "./admin.js";
+import {
+  parseChzzkChessBadgeState,
+  selectPreferredChessProvider
+} from "./chess-badges.js";
 
 const SUPPORTED_SPEEDS = ["bullet", "blitz", "rapid", "classical"] as const;
 const MANUAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1_000;
@@ -36,8 +40,7 @@ export class LichessRefreshError extends Error {
 export async function saveVerifiedLichessAccount(
   uid: string,
   chzzkChannelId: string,
-  player: LichessPlayer,
-  activateProvider = true
+  player: LichessPlayer
 ): Promise<StoredLichessAccount> {
   const db = getFirestoreDb();
   const accountId = toLichessAccountId(player.normalizedUsername);
@@ -64,9 +67,18 @@ export async function saveVerifiedLichessAccount(
     }
 
     const previousAccountId = userSnapshot.data()?.chessAccountIds?.lichess;
-    const currentPreference = chzzkAccountSnapshot.data()?.preferredChessProvider;
-    const shouldActivate =
-      activateProvider || userSnapshot.data()?.activeChessProvider !== "chesscom";
+    const currentState = parseChzzkChessBadgeState(chzzkAccountSnapshot.data());
+    const lichessBadge = highest ? toBadge(highest) : null;
+    const badges = { ...currentState.badges };
+    if (lichessBadge) {
+      badges.lichess = lichessBadge;
+    } else {
+      delete badges.lichess;
+    }
+    const preferredProvider = selectPreferredChessProvider(
+      badges,
+      currentState.preferredProvider
+    );
     const now = FieldValue.serverTimestamp();
 
     if (typeof previousAccountId === "string" && previousAccountId !== accountId) {
@@ -103,27 +115,15 @@ export async function saveVerifiedLichessAccount(
     }, { merge: true });
     transaction.set(userRef, {
       chessAccountIds: { lichess: accountId },
-      ...(shouldActivate ? { activeChessProvider: "lichess" } : {}),
+      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     }, { merge: true });
-    if (shouldActivate) {
-      transaction.set(chzzkAccountRef, {
-        badges: { lichess: highest ? toBadge(highest) : null },
-        preferredChessProvider:
-          currentPreference === "chesscom"
-            ? "chesscom"
-            : highest
-              ? "lichess"
-              : FieldValue.delete(),
-        badge: highest ? toBadge(highest) : null,
-        updatedAt: now
-      }, { merge: true });
-    } else {
-      transaction.set(chzzkAccountRef, {
-        badges: { lichess: highest ? toBadge(highest) : null },
-        updatedAt: now
-      }, { merge: true });
-    }
+    transaction.set(chzzkAccountRef, {
+      badges,
+      preferredChessProvider: preferredProvider ?? FieldValue.delete(),
+      badge: FieldValue.delete(),
+      updatedAt: now
+    }, { merge: true });
 
     const ratingsBySpeed = new Map(player.ratings.map((rating) => [rating.speed, rating]));
     for (const speed of SUPPORTED_SPEEDS) {
@@ -226,7 +226,7 @@ export async function refreshLichessAccount(
   if (player.playerId.toLowerCase() !== current.playerId.toLowerCase()) {
     throw new LichessRefreshError("identity_changed");
   }
-  return saveVerifiedLichessAccount(uid, chzzkChannelId, player, false);
+  return saveVerifiedLichessAccount(uid, chzzkChannelId, player);
 }
 
 export async function disconnectLichessAccount(
@@ -257,16 +257,13 @@ export async function disconnectLichessAccount(
       return false;
     }
 
-    const chessComIsActive = userSnapshot.data()?.activeChessProvider === "chesscom";
-    const storedPreference = chzzkAccountSnapshot.data()?.preferredChessProvider;
-    const legacyProvider = chzzkAccountSnapshot.data()?.badge?.provider;
-    const currentPreference =
-      storedPreference === "chesscom" || storedPreference === "lichess"
-        ? storedPreference
-        : legacyProvider === "chesscom" || legacyProvider === "lichess"
-          ? legacyProvider
-          : null;
-    const chessComBadge = chzzkAccountSnapshot.data()?.badges?.chesscom;
+    const currentState = parseChzzkChessBadgeState(chzzkAccountSnapshot.data());
+    const remainingBadges = { ...currentState.badges };
+    delete remainingBadges.lichess;
+    const preferredProvider = selectPreferredChessProvider(
+      remainingBadges,
+      currentState.preferredProvider
+    );
     const now = FieldValue.serverTimestamp();
     for (const speed of SUPPORTED_SPEEDS) {
       transaction.delete(accountRef.collection("ratings").doc(speed));
@@ -274,18 +271,13 @@ export async function disconnectLichessAccount(
     transaction.delete(accountRef);
     transaction.update(userRef, {
       "chessAccountIds.lichess": FieldValue.delete(),
-      ...(chessComIsActive ? {} : { activeChessProvider: FieldValue.delete() }),
+      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     });
     transaction.update(chzzkAccountRef, {
-      "badges.lichess": FieldValue.delete(),
-      preferredChessProvider:
-        currentPreference === "lichess"
-          ? chessComBadge
-            ? "chesscom"
-            : FieldValue.delete()
-          : currentPreference ?? (chessComBadge ? "chesscom" : FieldValue.delete()),
-      badge: chessComBadge ?? null,
+      badges: remainingBadges,
+      preferredChessProvider: preferredProvider ?? FieldValue.delete(),
+      badge: FieldValue.delete(),
       updatedAt: now
     });
     return true;
@@ -305,7 +297,7 @@ function toStoredRating(rating: LichessRating, fetchedAt: Date) {
 
 function toBadge(rating: LichessRating) {
   return {
-    provider: "lichess",
+    provider: "lichess" as const,
     speed: rating.speed,
     value: rating.value,
     provisional: rating.provisional

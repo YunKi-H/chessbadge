@@ -6,6 +6,10 @@ import {
   CHESS_COM_MANUAL_REFRESH_COOLDOWN_MS,
   getNextChessComRefreshAt
 } from "../chess/chesscom/rating-refresh-policy.js";
+import {
+  parseChzzkChessBadgeState,
+  selectPreferredChessProvider
+} from "./chess-badges.js";
 
 export interface StoredChessComAccount {
   username: string;
@@ -68,34 +72,26 @@ export async function disconnectChessComAccount(
     }
 
     const now = FieldValue.serverTimestamp();
-    const existingLichessBadge = chzzkAccountSnapshot.data()?.badges?.lichess;
-    const storedPreference = chzzkAccountSnapshot.data()?.preferredChessProvider;
-    const legacyProvider = chzzkAccountSnapshot.data()?.badge?.provider;
-    const currentPreference =
-      storedPreference === "chesscom" || storedPreference === "lichess"
-        ? storedPreference
-        : legacyProvider === "chesscom" || legacyProvider === "lichess"
-          ? legacyProvider
-          : null;
+    const currentState = parseChzzkChessBadgeState(chzzkAccountSnapshot.data());
+    const remainingBadges = { ...currentState.badges };
+    delete remainingBadges.chesscom;
+    const preferredProvider = selectPreferredChessProvider(
+      remainingBadges,
+      currentState.preferredProvider
+    );
     transaction.delete(accountRef);
     for (const ratingRef of ratingRefs) {
       transaction.delete(ratingRef);
     }
-    const lichessIsActive = userSnapshot.data()?.activeChessProvider === "lichess";
     transaction.update(userRef, {
       "chessAccountIds.chesscom": FieldValue.delete(),
-      ...(lichessIsActive ? {} : { activeChessProvider: FieldValue.delete() }),
+      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     });
     transaction.update(chzzkAccountRef, {
-      "badges.chesscom": FieldValue.delete(),
-      preferredChessProvider:
-        currentPreference === "chesscom"
-          ? existingLichessBadge
-            ? "lichess"
-            : FieldValue.delete()
-          : currentPreference ?? (existingLichessBadge ? "lichess" : FieldValue.delete()),
-      badge: existingLichessBadge ?? null,
+      badges: remainingBadges,
+      preferredChessProvider: preferredProvider ?? FieldValue.delete(),
+      badge: FieldValue.delete(),
       updatedAt: now
     });
 
@@ -116,15 +112,19 @@ export async function saveUnverifiedChessComAccount(
   const accountRef = db.collection("chessAccounts").doc(accountId);
   const userRef = db.collection("users").doc(uid);
   const chzzkChannelId = uid.startsWith("chzzk:") ? uid.slice(6) : null;
+  const chzzkAccountRef = chzzkChannelId
+    ? db.collection("chzzkAccounts").doc(chzzkChannelId)
+    : null;
   const fetchedAt = new Date();
   const manualRefreshAvailableAt = new Date(
     fetchedAt.getTime() + CHESS_COM_MANUAL_REFRESH_COOLDOWN_MS
   );
 
   const savedState = await db.runTransaction(async (transaction) => {
-    const [accountSnapshot, userSnapshot] = await Promise.all([
+    const [accountSnapshot, userSnapshot, chzzkAccountSnapshot] = await Promise.all([
       transaction.get(accountRef),
-      transaction.get(userRef)
+      transaction.get(userRef),
+      chzzkAccountRef ? transaction.get(chzzkAccountRef) : Promise.resolve(null)
     ]);
     const linkedUid = accountSnapshot.data()?.uid;
 
@@ -194,38 +194,40 @@ export async function saveUnverifiedChessComAccount(
       userRef,
       {
         chessAccountIds: { chesscom: accountId },
+        activeChessProvider: FieldValue.delete(),
         updatedAt: now
       },
       { merge: true }
     );
-    if (chzzkChannelId && userSnapshot.data()?.activeChessProvider !== "lichess") {
+    if (chzzkAccountRef) {
+      const chessComBadge = selectedRating
+        ? {
+            provider: "chesscom" as const,
+            speed: selectedRating.speed,
+            value: selectedRating.value,
+            provisional: false
+          }
+        : null;
+      const currentState = parseChzzkChessBadgeState(
+        chzzkAccountSnapshot?.data()
+      );
+      const badges = { ...currentState.badges };
+      if (chessComBadge) {
+        badges.chesscom = chessComBadge;
+      } else {
+        delete badges.chesscom;
+      }
+      const preferredProvider = selectPreferredChessProvider(
+        badges,
+        currentState.preferredProvider
+      );
       transaction.set(
-        db.collection("chzzkAccounts").doc(chzzkChannelId),
+        chzzkAccountRef,
         {
-          badges: {
-            chesscom: selectedRating
-              ? {
-                  provider: "chesscom",
-                  speed: selectedRating.speed,
-                  value: selectedRating.value,
-                  provisional: false
-                }
-              : null
-          },
+          badges,
           preferredChessProvider:
-            userSnapshot.data()?.activeChessProvider === "lichess"
-              ? "lichess"
-              : selectedRating
-                ? "chesscom"
-                : FieldValue.delete(),
-          badge: selectedRating
-            ? {
-                provider: "chesscom",
-                speed: selectedRating.speed,
-                value: selectedRating.value,
-                provisional: false
-              }
-            : null,
+            preferredProvider ?? FieldValue.delete(),
+          badge: FieldValue.delete(),
           updatedAt: now
         },
         { merge: true }

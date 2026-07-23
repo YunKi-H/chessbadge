@@ -2,8 +2,11 @@ import { UserRound } from "lucide-react";
 import { ChessComAccountSettings } from "./ChessComAccountSettings";
 import { LichessAccountSettings } from "./LichessAccountSettings";
 import { AccountDeletion } from "./AccountDeletion";
+import { useChessBadgePreference } from "./useChessBadgePreference";
 
 export function ViewerPage() {
+  const badgePreference = useChessBadgePreference();
+
   return (
     <div>
       <header className="mb-8">
@@ -13,8 +16,8 @@ export function ViewerPage() {
         </div>
         <h1 className="mt-2 text-2xl font-semibold text-white">체스 계정</h1>
       </header>
-      <ChessComAccountSettings />
-      <LichessAccountSettings />
+      <ChessComAccountSettings badgePreference={badgePreference} />
+      <LichessAccountSettings badgePreference={badgePreference} />
       <AccountDeletion />
     </div>
   );

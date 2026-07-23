@@ -1,69 +1,15 @@
-import { useEffect, useState } from "react";
 import type { ChessProvider } from "@elobadge/core";
 import { LoaderCircle } from "lucide-react";
-import { onAuthStateChanged } from "firebase/auth";
-import {
-  getChessBadgePreference,
-  updateChessBadgePreference,
-  type ChessBadgePreference
-} from "../api/client";
-import { getFirebaseClientAuth } from "../firebase/client";
+import type { ChessBadgePreferenceController } from "./useChessBadgePreference";
 
 export function ChessBadgePreferenceControl({
-  provider
+  provider,
+  preference
 }: {
   provider: ChessProvider;
+  preference: ChessBadgePreferenceController;
 }) {
-  const [state, setState] = useState<ChessBadgePreference | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const load = () => {
-      void getChessBadgePreference()
-        .then((preference) => {
-          setState(preference);
-          setError(null);
-        })
-        .catch((reason: unknown) => {
-          setError(reason instanceof Error ? reason.message : "배지 정보를 불러오지 못했습니다.");
-        });
-    };
-
-    const unsubscribeAuth = onAuthStateChanged(
-      getFirebaseClientAuth(),
-      (user) => {
-        if (user) {
-          load();
-        } else {
-          setState(null);
-          setError(null);
-        }
-      }
-    );
-    window.addEventListener("elobadge:chess-badges-changed", load);
-    return () => {
-      unsubscribeAuth();
-      window.removeEventListener("elobadge:chess-badges-changed", load);
-    };
-  }, []);
-
-  if (!state && !error) {
-    return null;
-  }
-  const select = async (provider: ChessProvider) => {
-    setSaving(true);
-    setError(null);
-    try {
-      setState(await updateChessBadgePreference(provider));
-      window.dispatchEvent(new Event("elobadge:chess-badges-changed"));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "배지를 변경하지 못했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  const { state, error, savingProvider, select } = preference;
   if (error) {
     return (
       <span className="text-xs font-normal text-red-300" title={error}>
@@ -76,6 +22,7 @@ export function ChessBadgePreferenceControl({
   }
 
   const selected = state.preferredProvider === provider;
+  const saving = savingProvider !== null;
 
   return (
     <label
@@ -97,7 +44,7 @@ export function ChessBadgePreferenceControl({
         {selected ? <span className="size-2 rounded-full bg-emerald-300" /> : null}
       </span>
       <span>기본 배지</span>
-      {saving ? (
+      {savingProvider === provider ? (
         <LoaderCircle aria-hidden="true" className="animate-spin" size={14} />
       ) : null}
     </label>

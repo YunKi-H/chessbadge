@@ -35,6 +35,7 @@ import {
 } from "../chess-rating-refresh.js";
 import { listDueLichessRatingRefreshes } from "../lichess-rating-refresh.js";
 import { getChessBadgePreference } from "../chess-preferences.js";
+import { migrateLegacyChessBadgeData } from "../chess-badge-migration.js";
 import {
   enableStreamerOverlayAccess,
   getStreamerOverlayAccess,
@@ -220,6 +221,61 @@ test("Lichess OAuth linking stores ratings, selects a badge, and disconnects", a
   assert.equal(await getChzzkRatingBadge(channelId), null);
 });
 
+test("linking Lichess preserves a legacy Chess.com badge", async () => {
+  const uid = "chzzk:legacy-chesscom-before-lichess";
+  const channelId = "legacy-chesscom-before-lichess";
+  const chessComBadge = {
+    provider: "chesscom",
+    speed: "rapid",
+    value: 1800,
+    provisional: false
+  } as const;
+  const db = getFirestoreDb();
+  await Promise.all([
+    db.collection("users").doc(uid).set({ displayName: "viewer" }),
+    db.collection("chzzkAccounts").doc(channelId).set({
+      uid,
+      badge: chessComBadge
+    })
+  ]);
+
+  await saveVerifiedLichessAccount(uid, channelId, {
+    username: "LegacyViewer",
+    normalizedUsername: "legacyviewer",
+    playerId: "legacyviewer",
+    profileUrl: "https://lichess.org/@/LegacyViewer",
+    avatarUrl: null,
+    status: "active",
+    ratings: [
+      {
+        speed: "blitz",
+        value: 1900,
+        ratingDeviation: 50,
+        provisional: false,
+        games: 30
+      }
+    ]
+  });
+
+  const state = await getChzzkChessBadgeState(channelId);
+  assert.deepEqual(state, {
+    badges: {
+      chesscom: chessComBadge,
+      lichess: {
+        provider: "lichess",
+        speed: "blitz",
+        value: 1900,
+        provisional: false
+      }
+    },
+    preferredProvider: "chesscom"
+  });
+  assert.equal(
+    (await db.collection("chzzkAccounts").doc(channelId).get()).data()?.badge,
+    undefined
+  );
+});
+
 test("disconnect switches the badge preference to the remaining linked provider", async () => {
   const uid = "chzzk:dual-provider-viewer";
   const channelId = "dual-provider-viewer";
@@ -268,9 +324,9 @@ test("disconnect switches the badge preference to the remaining linked provider"
     badges: { chesscom: chessComBadge },
     preferredProvider: "chesscom"
   });
-  assert.deepEqual(
+  assert.equal(
     (await db.collection("chzzkAccounts").doc(channelId).get()).data()?.badge,
-    chessComBadge
+    undefined
   );
 
   assert.equal(await disconnectChessComAccount(uid, channelId), true);
@@ -280,8 +336,59 @@ test("disconnect switches the badge preference to the remaining linked provider"
   });
   assert.equal(
     (await db.collection("chzzkAccounts").doc(channelId).get()).data()?.badge,
-    null
+    undefined
   );
+});
+
+test("legacy chess badge fields migrate to the canonical model", async () => {
+  const uid = "chzzk:legacy-badge-migration";
+  const channelId = "legacy-badge-migration";
+  const legacyBadge = {
+    provider: "chesscom",
+    speed: "rapid",
+    value: 1700,
+    provisional: false
+  } as const;
+  const db = getFirestoreDb();
+
+  await Promise.all([
+    db.collection("users").doc(uid).set({
+      activeChessProvider: "chesscom"
+    }),
+    db.collection("chzzkAccounts").doc(channelId).set({
+      uid,
+      badge: legacyBadge
+    })
+  ]);
+
+  assert.deepEqual(await migrateLegacyChessBadgeData(false), {
+    chzzkAccountsFound: 1,
+    chzzkAccountsMigrated: 0,
+    usersFound: 1,
+    usersMigrated: 0
+  });
+  assert.deepEqual(await migrateLegacyChessBadgeData(true), {
+    chzzkAccountsFound: 1,
+    chzzkAccountsMigrated: 1,
+    usersFound: 1,
+    usersMigrated: 1
+  });
+
+  const [chzzkAccount, user] = await Promise.all([
+    db.collection("chzzkAccounts").doc(channelId).get(),
+    db.collection("users").doc(uid).get()
+  ]);
+  assert.deepEqual(chzzkAccount.data()?.badges, { chesscom: legacyBadge });
+  assert.equal(chzzkAccount.data()?.preferredChessProvider, "chesscom");
+  assert.equal(chzzkAccount.data()?.badge, undefined);
+  assert.equal(chzzkAccount.data()?.chessBadgeSchemaVersion, 2);
+  assert.equal(user.data()?.activeChessProvider, undefined);
+  assert.deepEqual(await migrateLegacyChessBadgeData(true), {
+    chzzkAccountsFound: 0,
+    chzzkAccountsMigrated: 0,
+    usersFound: 0,
+    usersMigrated: 0
+  });
 });
 
 test("badge preference restores a missing provider badge from linked accounts", async () => {
