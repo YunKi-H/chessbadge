@@ -47,10 +47,15 @@ export async function getStreamerOverlayAccess(
     return null;
   }
 
+  const appearance = parseOverlayAppearance(data.theme);
+  if (!appearance) {
+    return null;
+  }
+
   return {
     publicToken,
     active: data.active,
-    appearance: normalizeOverlayAppearance(data.theme)
+    appearance
   };
 }
 
@@ -143,183 +148,165 @@ export async function resolveActiveOverlayAccess(
     return null;
   }
 
-  return {
-    streamerUid: data.streamerUid,
-    appearance: normalizeOverlayAppearance(data.theme)
-  };
-}
-
-export function normalizeOverlayAppearance(value: unknown): OverlayAppearance {
-  if (!value || typeof value !== "object") {
-    return { ...DEFAULT_OVERLAY_APPEARANCE };
+  const appearance = parseOverlayAppearance(data.theme);
+  if (!appearance) {
+    return null;
   }
 
-  const appearance = value as Partial<OverlayAppearance>;
-
   return {
-    messageMaxWidthPx:
-      typeof appearance.messageMaxWidthPx === "number" &&
-      Number.isInteger(appearance.messageMaxWidthPx) &&
-      appearance.messageMaxWidthPx >= 300 &&
-      appearance.messageMaxWidthPx <= 600
-        ? appearance.messageMaxWidthPx
-        : DEFAULT_OVERLAY_APPEARANCE.messageMaxWidthPx,
-    backgroundVisible:
-      typeof appearance.backgroundVisible === "boolean"
-        ? appearance.backgroundVisible
-        : DEFAULT_OVERLAY_APPEARANCE.backgroundVisible,
-    backgroundColor:
-      typeof appearance.backgroundColor === "string" &&
-      /^#[0-9A-Fa-f]{6}$/.test(appearance.backgroundColor)
-        ? appearance.backgroundColor.toUpperCase()
-        : DEFAULT_OVERLAY_APPEARANCE.backgroundColor,
-    backgroundOpacity:
-      typeof appearance.backgroundOpacity === "number" &&
-      Number.isInteger(appearance.backgroundOpacity) &&
-      appearance.backgroundOpacity >= 0 &&
-      appearance.backgroundOpacity <= 100
-        ? appearance.backgroundOpacity
-        : DEFAULT_OVERLAY_APPEARANCE.backgroundOpacity,
-    chzzkBadgesVisible:
-      typeof appearance.chzzkBadgesVisible === "boolean"
-        ? appearance.chzzkBadgesVisible
-        : DEFAULT_OVERLAY_APPEARANCE.chzzkBadgesVisible,
-    chzzkBadgeVisibility: normalizeChzzkBadgeVisibility(
-      appearance.chzzkBadgeVisibility
-    ),
-    ratingProviderPolicy:
-      appearance.ratingProviderPolicy === "viewer_choice" ||
-      appearance.ratingProviderPolicy === "chesscom_only" ||
-      appearance.ratingProviderPolicy === "lichess_only" ||
-      appearance.ratingProviderPolicy === "hidden"
-        ? appearance.ratingProviderPolicy
-        : DEFAULT_OVERLAY_APPEARANCE.ratingProviderPolicy,
-    nicknameVisible:
-      typeof appearance.nicknameVisible === "boolean"
-        ? appearance.nicknameVisible
-        : DEFAULT_OVERLAY_APPEARANCE.nicknameVisible,
-    nicknameColorMode:
-      appearance.nicknameColorMode === "fixed" ||
-      appearance.nicknameColorMode === "by_user" ||
-      appearance.nicknameColorMode === "by_role"
-        ? appearance.nicknameColorMode
-        : DEFAULT_OVERLAY_APPEARANCE.nicknameColorMode,
-    nicknameColor:
-      typeof appearance.nicknameColor === "string" &&
-      /^#[0-9A-Fa-f]{6}$/.test(appearance.nicknameColor)
-        ? appearance.nicknameColor.toUpperCase()
-        : DEFAULT_OVERLAY_APPEARANCE.nicknameColor,
-    nicknameRoleColors: normalizeNicknameRoleColors(
-      appearance.nicknameRoleColors
-    ),
-    messageColorMode:
-      appearance.messageColorMode === "fixed" ||
-      appearance.messageColorMode === "by_role"
-        ? appearance.messageColorMode
-        : DEFAULT_OVERLAY_APPEARANCE.messageColorMode,
-    messageColor:
-      typeof appearance.messageColor === "string" &&
-      /^#[0-9A-Fa-f]{6}$/.test(appearance.messageColor)
-        ? appearance.messageColor.toUpperCase()
-        : DEFAULT_OVERLAY_APPEARANCE.messageColor,
-    messageRoleColors: normalizeMessageRoleColors(
-      appearance.messageRoleColors
-    ),
-    fontFamily: isOverlayFontFamily(appearance.fontFamily)
-      ? appearance.fontFamily
-      : DEFAULT_OVERLAY_APPEARANCE.fontFamily,
-    fontSizePx:
-      typeof appearance.fontSizePx === "number" &&
-      Number.isInteger(appearance.fontSizePx) &&
-      appearance.fontSizePx >= 12 &&
-      appearance.fontSizePx <= 36
-        ? appearance.fontSizePx
-        : DEFAULT_OVERLAY_APPEARANCE.fontSizePx,
-    fontWeight:
-      appearance.fontWeight === 400 ||
-      appearance.fontWeight === 500 ||
-      appearance.fontWeight === 600 ||
-      appearance.fontWeight === 700 ||
-      appearance.fontWeight === 900
-        ? appearance.fontWeight
-        : DEFAULT_OVERLAY_APPEARANCE.fontWeight,
-    fontLineHeight:
-      appearance.fontLineHeight === 1.2 ||
-      appearance.fontLineHeight === 1.4 ||
-      appearance.fontLineHeight === 1.6
-        ? appearance.fontLineHeight
-        : DEFAULT_OVERLAY_APPEARANCE.fontLineHeight,
-    messageDurationSeconds:
-      appearance.messageDurationSeconds === 0 ||
-      appearance.messageDurationSeconds === 10 ||
-      appearance.messageDurationSeconds === 20 ||
-      appearance.messageDurationSeconds === 30 ||
-      appearance.messageDurationSeconds === 60
-        ? appearance.messageDurationSeconds
-        : DEFAULT_OVERLAY_APPEARANCE.messageDurationSeconds
+    streamerUid: data.streamerUid,
+    appearance
   };
 }
 
-function normalizeMessageRoleColors(
-  value: unknown
-): OverlayAppearance["messageRoleColors"] {
-  return normalizeRoleColors(
-    value,
+export function parseOverlayAppearance(value: unknown): OverlayAppearance | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const appearance = value as Record<string, unknown>;
+  const chzzkBadgeVisibility = parseChzzkBadgeVisibility(
+    appearance.chzzkBadgeVisibility
+  );
+  const nicknameRoleColors = parseRoleColors(
+    appearance.nicknameRoleColors,
+    DEFAULT_OVERLAY_APPEARANCE.nicknameRoleColors
+  );
+  const messageRoleColors = parseRoleColors(
+    appearance.messageRoleColors,
     DEFAULT_OVERLAY_APPEARANCE.messageRoleColors
   );
+
+  if (
+    typeof appearance.messageMaxWidthPx !== "number" ||
+    !Number.isInteger(appearance.messageMaxWidthPx) ||
+    appearance.messageMaxWidthPx < 300 ||
+    appearance.messageMaxWidthPx > 600 ||
+    typeof appearance.backgroundVisible !== "boolean" ||
+    !isHexColor(appearance.backgroundColor) ||
+    typeof appearance.backgroundOpacity !== "number" ||
+    !Number.isInteger(appearance.backgroundOpacity) ||
+    appearance.backgroundOpacity < 0 ||
+    appearance.backgroundOpacity > 100 ||
+    typeof appearance.chzzkBadgesVisible !== "boolean" ||
+    !chzzkBadgeVisibility ||
+    !isRatingProviderPolicy(appearance.ratingProviderPolicy) ||
+    typeof appearance.nicknameVisible !== "boolean" ||
+    !isNicknameColorMode(appearance.nicknameColorMode) ||
+    !isHexColor(appearance.nicknameColor) ||
+    !nicknameRoleColors ||
+    !isMessageColorMode(appearance.messageColorMode) ||
+    !isHexColor(appearance.messageColor) ||
+    !messageRoleColors ||
+    !isOverlayFontFamily(appearance.fontFamily) ||
+    typeof appearance.fontSizePx !== "number" ||
+    !Number.isInteger(appearance.fontSizePx) ||
+    appearance.fontSizePx < 12 ||
+    appearance.fontSizePx > 36 ||
+    !isFontWeight(appearance.fontWeight) ||
+    !isFontLineHeight(appearance.fontLineHeight) ||
+    !isMessageDuration(appearance.messageDurationSeconds)
+  ) {
+    return null;
+  }
+
+  return {
+    messageMaxWidthPx: appearance.messageMaxWidthPx,
+    backgroundVisible: appearance.backgroundVisible,
+    backgroundColor: appearance.backgroundColor.toUpperCase(),
+    backgroundOpacity: appearance.backgroundOpacity,
+    chzzkBadgesVisible: appearance.chzzkBadgesVisible,
+    chzzkBadgeVisibility,
+    ratingProviderPolicy: appearance.ratingProviderPolicy,
+    nicknameVisible: appearance.nicknameVisible,
+    nicknameColorMode: appearance.nicknameColorMode,
+    nicknameColor: appearance.nicknameColor.toUpperCase(),
+    nicknameRoleColors,
+    messageColorMode: appearance.messageColorMode,
+    messageColor: appearance.messageColor.toUpperCase(),
+    messageRoleColors,
+    fontFamily: appearance.fontFamily,
+    fontSizePx: appearance.fontSizePx,
+    fontWeight: appearance.fontWeight,
+    fontLineHeight: appearance.fontLineHeight,
+    messageDurationSeconds: appearance.messageDurationSeconds
+  };
 }
 
-function normalizeChzzkBadgeVisibility(
+function parseChzzkBadgeVisibility(
   value: unknown
-): OverlayAppearance["chzzkBadgeVisibility"] {
-  const visibility: Record<string, unknown> =
-    value && typeof value === "object"
-      ? (value as Record<string, unknown>)
-      : {};
+): OverlayAppearance["chzzkBadgeVisibility"] | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const visibility = value as Record<string, unknown>;
+  const keys = Object.keys(DEFAULT_OVERLAY_APPEARANCE.chzzkBadgeVisibility);
+  if (keys.some((kind) => typeof visibility[kind] !== "boolean")) {
+    return null;
+  }
 
   return Object.fromEntries(
-    Object.entries(DEFAULT_OVERLAY_APPEARANCE.chzzkBadgeVisibility).map(
-      ([kind, defaultVisible]) => [
-        kind,
-        typeof visibility[kind] === "boolean"
-          ? visibility[kind]
-          : defaultVisible
-      ]
-    )
+    keys.map((kind) => [kind, visibility[kind]])
   ) as OverlayAppearance["chzzkBadgeVisibility"];
 }
 
-function normalizeNicknameRoleColors(
-  value: unknown
-): OverlayAppearance["nicknameRoleColors"] {
-  return normalizeRoleColors(
-    value,
-    DEFAULT_OVERLAY_APPEARANCE.nicknameRoleColors
-  );
-}
-
-function normalizeRoleColors<T extends Record<string, string>>(
+function parseRoleColors<T extends Record<string, string>>(
   value: unknown,
-  defaults: T
-): T {
-  const colors: Record<string, unknown> =
-    value && typeof value === "object"
-      ? (value as Record<string, unknown>)
-      : {};
+  shape: T
+): T | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const colors = value as Record<string, unknown>;
+  const keys = Object.keys(shape);
+  if (keys.some((kind) => !isHexColor(colors[kind]))) {
+    return null;
+  }
 
   return Object.fromEntries(
-    Object.entries(defaults).map(
-      ([kind, defaultColor]) => {
-        const color = colors[kind];
-        return [
-          kind,
-          typeof color === "string" && /^#[0-9A-Fa-f]{6}$/.test(color)
-            ? color.toUpperCase()
-            : defaultColor
-        ];
-      }
-    )
+    keys.map((kind) => [kind, (colors[kind] as string).toUpperCase()])
   ) as T;
+}
+
+function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9A-Fa-f]{6}$/.test(value);
+}
+
+function isRatingProviderPolicy(
+  value: unknown
+): value is OverlayAppearance["ratingProviderPolicy"] {
+  return value === "viewer_choice" || value === "chesscom_only" ||
+    value === "lichess_only" || value === "hidden";
+}
+
+function isNicknameColorMode(
+  value: unknown
+): value is OverlayAppearance["nicknameColorMode"] {
+  return value === "fixed" || value === "by_user" || value === "by_role";
+}
+
+function isMessageColorMode(
+  value: unknown
+): value is OverlayAppearance["messageColorMode"] {
+  return value === "fixed" || value === "by_role";
+}
+
+function isFontWeight(value: unknown): value is OverlayAppearance["fontWeight"] {
+  return value === 400 || value === 500 || value === 600 ||
+    value === 700 || value === 900;
+}
+
+function isFontLineHeight(
+  value: unknown
+): value is OverlayAppearance["fontLineHeight"] {
+  return value === 1.2 || value === 1.4 || value === 1.6;
+}
+
+function isMessageDuration(
+  value: unknown
+): value is OverlayAppearance["messageDurationSeconds"] {
+  return value === 0 || value === 10 || value === 20 || value === 30 ||
+    value === 60;
 }
 
 async function createOrRotateOverlayAccess(
@@ -355,7 +342,7 @@ async function createOrRotateOverlayAccess(
         const existing = await transaction.get(existingRef);
 
         if (existing.exists && existing.data()?.streamerUid === streamerUid) {
-          appearance = normalizeOverlayAppearance(existing.data()?.theme);
+          appearance = requireStoredOverlayAppearance(existing.data()?.theme);
           transaction.set(
             existingRef,
             { active: true, updatedAt: FieldValue.serverTimestamp() },
@@ -370,7 +357,7 @@ async function createOrRotateOverlayAccess(
         const existing = await transaction.get(existingRef);
 
         if (existing.exists && existing.data()?.streamerUid === streamerUid) {
-          appearance = normalizeOverlayAppearance(existing.data()?.theme);
+          appearance = requireStoredOverlayAppearance(existing.data()?.theme);
           transaction.delete(existingRef);
         }
       }
@@ -398,4 +385,12 @@ async function createOrRotateOverlayAccess(
   }
 
   throw new Error("Could not allocate a unique overlay token");
+}
+
+function requireStoredOverlayAppearance(value: unknown): OverlayAppearance {
+  const appearance = parseOverlayAppearance(value);
+  if (!appearance) {
+    throw new Error("Stored overlay appearance is invalid");
+  }
+  return appearance;
 }

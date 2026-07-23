@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { OVERLAY_FONT_FAMILY_VALUES } from "@elobadge/core";
+import {
+  DEFAULT_OVERLAY_APPEARANCE,
+  OVERLAY_FONT_FAMILY_VALUES
+} from "@elobadge/core";
 import {
   generateOverlayPublicToken,
-  normalizeOverlayAppearance
+  parseOverlayAppearance
 } from "./overlays.js";
 
 test("overlay public tokens are URL-safe, random 256-bit values", () => {
@@ -18,49 +21,9 @@ test("overlay public tokens are URL-safe, random 256-bit values", () => {
   }
 });
 
-test("overlay appearance falls back safely for legacy theme documents", () => {
-  assert.deepEqual(normalizeOverlayAppearance({}), {
-    messageMaxWidthPx: 600,
-    backgroundVisible: true,
-    backgroundColor: "#020617",
-    backgroundOpacity: 90,
-    chzzkBadgesVisible: true,
-    chzzkBadgeVisibility: {
-      role: true,
-      subscription: true,
-      donation: true,
-      subscription_gift: true,
-      unknown: true
-    },
-    ratingProviderPolicy: "viewer_choice",
-    nicknameVisible: true,
-    nicknameColorMode: "fixed",
-    nicknameColor: "#7DD3FC",
-    nicknameRoleColors: {
-      streamer: "#34D399",
-      manager: "#60A5FA",
-      donator: "#FBBF24",
-      subscriber: "#C084FC",
-      viewer: "#E2E8F0"
-    },
-    messageColorMode: "fixed",
-    messageColor: "#FFFFFF",
-    messageRoleColors: {
-      streamer: "#86EFAC",
-      manager: "#93C5FD",
-      donator: "#FDE68A",
-      subscriber: "#D8B4FE",
-      viewer: "#FFFFFF"
-    },
-    fontFamily: "system",
-    fontSizePx: 18,
-    fontWeight: 400,
-    fontLineHeight: 1.4,
-    messageDurationSeconds: 20
-  });
-
+test("overlay appearance accepts a complete valid document", () => {
   assert.deepEqual(
-    normalizeOverlayAppearance({
+    parseOverlayAppearance({
       messageMaxWidthPx: 480,
       backgroundVisible: false,
       backgroundColor: "#abcdef",
@@ -141,64 +104,32 @@ test("overlay appearance falls back safely for legacy theme documents", () => {
   );
 });
 
-test("overlay appearance rejects unsupported font settings", () => {
-  const appearance = normalizeOverlayAppearance({
-    messageMaxWidthPx: 250,
-    fontFamily: "remote-font",
-    fontSizePx: 72,
-    fontWeight: 800,
-    fontLineHeight: 2
-  });
-
-  assert.equal(appearance.messageMaxWidthPx, 600);
-  assert.equal(appearance.fontFamily, "system");
-  assert.equal(appearance.fontSizePx, 18);
-  assert.equal(appearance.fontWeight, 400);
-  assert.equal(appearance.fontLineHeight, 1.4);
+test("overlay appearance rejects incomplete and invalid documents", () => {
+  assert.equal(parseOverlayAppearance({}), null);
+  assert.equal(
+    parseOverlayAppearance({
+      ...DEFAULT_OVERLAY_APPEARANCE,
+      fontFamily: "remote-font"
+    }),
+    null
+  );
+  assert.equal(
+    parseOverlayAppearance({
+      ...DEFAULT_OVERLAY_APPEARANCE,
+      chzzkBadgeVisibility: { donation: false }
+    }),
+    null
+  );
 });
 
 test("overlay appearance accepts every supported font preset", () => {
   for (const fontFamily of OVERLAY_FONT_FAMILY_VALUES) {
-    assert.equal(normalizeOverlayAppearance({ fontFamily }).fontFamily, fontFamily);
+    assert.equal(
+      parseOverlayAppearance({
+        ...DEFAULT_OVERLAY_APPEARANCE,
+        fontFamily
+      })?.fontFamily,
+      fontFamily
+    );
   }
-});
-
-test("overlay appearance fills missing badge visibility for legacy themes", () => {
-  assert.deepEqual(normalizeOverlayAppearance({}).chzzkBadgeVisibility, {
-    role: true,
-    subscription: true,
-    donation: true,
-    subscription_gift: true,
-    unknown: true
-  });
-
-  assert.deepEqual(
-    normalizeOverlayAppearance({
-      chzzkBadgeVisibility: { donation: false, unknown: false }
-    }).chzzkBadgeVisibility,
-    {
-      role: true,
-      subscription: true,
-      donation: false,
-      subscription_gift: true,
-      unknown: false
-    }
-  );
-});
-
-test("legacy themes keep the fixed message color mode", () => {
-  const appearance = normalizeOverlayAppearance({ messageColor: "#123456" });
-
-  assert.equal(appearance.messageColorMode, "fixed");
-  assert.equal(appearance.messageColor, "#123456");
-  assert.deepEqual(
-    appearance.messageRoleColors,
-    {
-      streamer: "#86EFAC",
-      manager: "#93C5FD",
-      donator: "#FDE68A",
-      subscriber: "#D8B4FE",
-      viewer: "#FFFFFF"
-    }
-  );
 });

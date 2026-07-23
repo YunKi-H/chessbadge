@@ -7,7 +7,6 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "chzzk:revoke-all": "tsx src/scripts/revoke-chzzk-streamer-tokens.ts",
-    "overlay-appearances:migrate": "node dist/scripts/migrate-overlay-appearances.js",
     "test": "tsx --test src/auth/*.test.ts src/auth/chzzk/*.test.ts src/chess/*.test.ts src/chess/chesscom/*.test.ts src/chess/lichess/*.test.ts src/chzzk/*.test.ts src/firebase/*.test.ts src/realtime/*.test.ts src/routes/*.test.ts src/security/*.test.ts",
     "test:emulator:run": "tsx --test src/firebase/emulator/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",

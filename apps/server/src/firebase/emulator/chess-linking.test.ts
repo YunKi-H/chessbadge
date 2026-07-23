@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, test } from "node:test";
-import { DEFAULT_OVERLAY_APPEARANCE } from "@elobadge/core";
 import { deleteApp } from "firebase-admin/app";
 import { Timestamp } from "firebase-admin/firestore";
 import type { ChessComPlayer } from "../../chess/chesscom/client.js";
@@ -13,7 +12,6 @@ import {
 import { getFirebaseAdminApp, getFirestoreDb } from "../admin.js";
 import { deleteUserFirestoreData } from "../account-deletion.js";
 import { deleteOrphanedInactiveOverlays } from "../overlay-cleanup.js";
-import { backfillOverlayAppearances } from "../overlay-appearance-migration.js";
 import {
   getChzzkChessBadgeState,
   getChzzkRatingBadge
@@ -587,51 +585,6 @@ test("overlay cleanup preserves the streamer's current disabled URL", async () =
   assert.equal((await overlays.doc("rotated-old").get()).exists, false);
   assert.equal((await overlays.doc("malformed-old").get()).exists, false);
   assert.equal((await overlays.doc("active-overlay").get()).exists, true);
-});
-
-test("overlay appearance migration backfills only valid partial themes", async () => {
-  const db = getFirestoreDb();
-  const overlays = db.collection("overlays");
-
-  await Promise.all([
-    overlays.doc("partial-theme").set({
-      streamerUid: "chzzk:partial-theme",
-      active: true,
-      theme: {
-        backgroundVisible: false,
-        messageColor: "#123456"
-      }
-    }),
-    overlays.doc("current-theme").set({
-      streamerUid: "chzzk:current-theme",
-      active: true,
-      theme: DEFAULT_OVERLAY_APPEARANCE
-    }),
-    overlays.doc("malformed-overlay").set({
-      active: false,
-      theme: {}
-    })
-  ]);
-
-  assert.deepEqual(await backfillOverlayAppearances(false), {
-    found: 1,
-    migrated: 0
-  });
-  assert.deepEqual(await backfillOverlayAppearances(true), {
-    found: 1,
-    migrated: 1
-  });
-
-  const migrated = await overlays.doc("partial-theme").get();
-  assert.deepEqual(migrated.data()?.theme, {
-    ...DEFAULT_OVERLAY_APPEARANCE,
-    backgroundVisible: false,
-    messageColor: "#123456"
-  });
-  assert.deepEqual(await backfillOverlayAppearances(true), {
-    found: 0,
-    migrated: 0
-  });
 });
 
 test("deployed Firestore rules deny direct unauthenticated client access", async () => {
