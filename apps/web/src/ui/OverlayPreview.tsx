@@ -73,15 +73,6 @@ export function OverlayPreview({ appearance }: { appearance: OverlayAppearance }
       id: `preview-${crypto.randomUUID()}`,
       nickname: trimmedNickname,
       content: trimmedContent,
-      rating:
-        ratingValue === null
-          ? null
-          : {
-              provider: "chesscom",
-              speed: "rapid",
-              value: ratingValue,
-              provisional: false
-            },
       ratings:
         ratingValue === null
           ? {}

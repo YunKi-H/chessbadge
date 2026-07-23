@@ -27,7 +27,8 @@ function chatEvent(id: string): ChatOverlayEvent {
     id,
     nickname: "viewer",
     content: "message",
-    rating: null,
+    ratings: {},
+    preferredChessProvider: null,
     emojis: [],
     authorKind: "viewer",
     sentAt: "2026-07-14T00:00:00.000Z"

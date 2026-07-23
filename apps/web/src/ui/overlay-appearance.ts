@@ -9,12 +9,10 @@ export function overlayRating(
   appearance: OverlayAppearance,
   message: ChatOverlayEvent
 ): RatingBadge | null {
-  const ratings = message.ratings ??
-    (message.rating ? { [message.rating.provider]: message.rating } : {});
   return resolveRatingBadge(
     appearance.ratingProviderPolicy,
-    ratings,
-    message.preferredChessProvider ?? null
+    message.ratings,
+    message.preferredChessProvider
   );
 }
 

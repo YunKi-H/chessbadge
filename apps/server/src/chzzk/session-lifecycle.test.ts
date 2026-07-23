@@ -130,9 +130,8 @@ test("published chat includes the sender's cached rating badge", async () => {
   });
   const session = new ChzzkSession("streamer-a", policy, deps);
   const events: Array<{
-    rating: { value: number } | null;
-    ratings?: { chesscom?: { value: number } };
-    preferredChessProvider?: string | null;
+    ratings: { chesscom?: { value: number } };
+    preferredChessProvider: string | null;
     chzzkBadges?: Array<{ kind: string; imageUrl: string }>;
     emojis: Array<{ token: string; imageUrl: string }>;
     authorKind: string;
@@ -160,7 +159,6 @@ test("published chat includes the sender's cached rating badge", async () => {
   });
   await waitFor(() => events.length === 1);
 
-  assert.equal(events[0]?.rating?.value, 1520);
   assert.equal(events[0]?.ratings?.chesscom?.value, 1520);
   assert.equal(events[0]?.preferredChessProvider, "chesscom");
   assert.deepEqual(events[0]?.chzzkBadges, [

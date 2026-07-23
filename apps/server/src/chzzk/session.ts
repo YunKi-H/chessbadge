@@ -751,14 +751,10 @@ function toChatOverlayEvent(
   message: z.infer<typeof chatMessageSchema>,
   badgeState: { badges: ChessBadges; preferredProvider: ChessProvider | null }
 ): ChatOverlayEvent {
-  const rating = badgeState.preferredProvider
-    ? badgeState.badges[badgeState.preferredProvider] ?? null
-    : badgeState.badges.chesscom ?? badgeState.badges.lichess ?? null;
   return {
     id: `chzzk:${message.channelId}:${message.senderChannelId}:${message.messageTime}`,
     nickname: message.profile.nickname,
     content: message.content,
-    rating,
     ratings: badgeState.badges,
     preferredChessProvider: badgeState.preferredProvider,
     chzzkBadges: normalizeChzzkBadges(message.profile.badges),

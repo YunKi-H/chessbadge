@@ -114,9 +114,8 @@ export interface ChatOverlayEvent {
   id: string;
   nickname: string;
   content: string;
-  rating: RatingBadge | null;
-  ratings?: ChessBadges;
-  preferredChessProvider?: ChessProvider | null;
+  ratings: ChessBadges;
+  preferredChessProvider: ChessProvider | null;
   chzzkBadges?: ChzzkBadge[];
   emojis: ChzzkEmoji[];
   authorKind: ChatAuthorKind;

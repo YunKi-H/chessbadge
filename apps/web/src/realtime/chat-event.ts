@@ -34,21 +34,26 @@ export function parseChatOverlayEvent(data: unknown): ChatOverlayEvent | null {
     typeof event.id !== "string" ||
     typeof event.nickname !== "string" ||
     typeof event.content !== "string" ||
-    typeof event.sentAt !== "string" ||
-    !isRatingBadge(event.rating)
+    typeof event.sentAt !== "string"
   ) {
     return null;
   }
 
   const chzzkBadges = parseChzzkBadges(event.chzzkBadges);
-  const ratings = parseChessBadges(event.ratings, event.rating);
+  const ratings = parseChessBadges(event.ratings);
   const preferredChessProvider = parseChessProvider(
     event.preferredChessProvider
   );
   const emojis = parseChzzkEmojis(event.emojis);
   const authorKind = parseChatAuthorKind(event.authorKind);
 
-  if (!chzzkBadges || !ratings || !emojis || !authorKind) {
+  if (
+    !chzzkBadges ||
+    !ratings ||
+    preferredChessProvider === undefined ||
+    !emojis ||
+    !authorKind
+  ) {
     return null;
   }
 
@@ -273,13 +278,7 @@ function isRatingBadge(value: unknown): value is RatingBadge | null {
   );
 }
 
-function parseChessBadges(
-  value: unknown,
-  legacyRating: RatingBadge | null | undefined
-): ChessBadges | null {
-  if (value === undefined) {
-    return legacyRating ? { [legacyRating.provider]: legacyRating } : {};
-  }
+function parseChessBadges(value: unknown): ChessBadges | null {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -297,8 +296,13 @@ function parseChessBadges(
   return parsed;
 }
 
-function parseChessProvider(value: unknown): ChessProvider | null {
-  return value === "chesscom" || value === "lichess" ? value : null;
+function parseChessProvider(
+  value: unknown
+): ChessProvider | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  return value === "chesscom" || value === "lichess" ? value : undefined;
 }
 
 function parseChzzkBadges(value: unknown): ChzzkBadge[] | null {
