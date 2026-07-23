@@ -79,7 +79,6 @@ async function reconcileLinkedChessBadges(
       transaction.update(chzzkRef, {
         badges,
         preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-        badge: FieldValue.delete(),
         updatedAt: FieldValue.serverTimestamp()
       });
     }
@@ -113,7 +112,6 @@ export async function updateChessBadgePreference(
     transaction.update(ref, {
       badges: state.badges,
       preferredChessProvider: provider,
-      badge: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp()
     });
   });

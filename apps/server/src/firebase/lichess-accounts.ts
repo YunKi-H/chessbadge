@@ -103,13 +103,11 @@ export async function saveVerifiedLichessAccount(
     }, { merge: true });
     transaction.set(userRef, {
       chessAccountIds: { lichess: accountId },
-      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     }, { merge: true });
     transaction.set(chzzkAccountRef, {
       badges,
       preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-      badge: FieldValue.delete(),
       updatedAt: now
     }, { merge: true });
 
@@ -235,13 +233,11 @@ export async function disconnectLichessAccount(
     transaction.delete(accountRef);
     transaction.update(userRef, {
       "chessAccountIds.lichess": FieldValue.delete(),
-      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     });
     transaction.update(chzzkAccountRef, {
       badges: remainingBadges,
       preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-      badge: FieldValue.delete(),
       updatedAt: now
     });
     return true;

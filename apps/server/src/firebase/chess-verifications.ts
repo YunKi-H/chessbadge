@@ -228,10 +228,6 @@ export async function completeChessComLocationVerification(
       ratingRefreshFailureCount: 0,
       updatedAt: now
     });
-    transaction.update(userRef, {
-      activeChessProvider: FieldValue.delete(),
-      updatedAt: now
-    });
     if (chzzkAccountRef) {
       transaction.set(
         chzzkAccountRef,
@@ -239,7 +235,6 @@ export async function completeChessComLocationVerification(
           badges,
           preferredChessProvider:
             preferredProvider ?? FieldValue.delete(),
-          badge: FieldValue.delete(),
           updatedAt: now
         },
         { merge: true }

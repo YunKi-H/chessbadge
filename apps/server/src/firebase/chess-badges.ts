@@ -84,10 +84,6 @@ export async function ensureHighestChessComBadge(
       selectedSpeed: highestRating.speed,
       updatedAt: now
     });
-    transaction.update(userRef, {
-      activeChessProvider: FieldValue.delete(),
-      updatedAt: now
-    });
     transaction.set(
       chzzkAccountRef,
       {
@@ -96,7 +92,6 @@ export async function ensureHighestChessComBadge(
           badges,
           currentState.preferredProvider
         ),
-        badge: FieldValue.delete(),
         updatedAt: now
       },
       { merge: true }
@@ -147,16 +142,11 @@ export function parseChzzkChessBadgeState(
     }
   }
 
-  const legacyBadge = parseRatingBadge(data?.badge);
-  if (legacyBadge && !badges[legacyBadge.provider]) {
-    badges[legacyBadge.provider] = legacyBadge;
-  }
-
   const requestedProvider =
     data?.preferredChessProvider === "chesscom" ||
     data?.preferredChessProvider === "lichess"
       ? data.preferredChessProvider
-      : legacyBadge?.provider ?? null;
+      : null;
   const preferredProvider = selectPreferredChessProvider(
     badges,
     requestedProvider

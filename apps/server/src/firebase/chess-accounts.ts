@@ -85,13 +85,11 @@ export async function disconnectChessComAccount(
     }
     transaction.update(userRef, {
       "chessAccountIds.chesscom": FieldValue.delete(),
-      activeChessProvider: FieldValue.delete(),
       updatedAt: now
     });
     transaction.update(chzzkAccountRef, {
       badges: remainingBadges,
       preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-      badge: FieldValue.delete(),
       updatedAt: now
     });
 
@@ -194,7 +192,6 @@ export async function saveUnverifiedChessComAccount(
       userRef,
       {
         chessAccountIds: { chesscom: accountId },
-        activeChessProvider: FieldValue.delete(),
         updatedAt: now
       },
       { merge: true }
@@ -227,7 +224,6 @@ export async function saveUnverifiedChessComAccount(
           badges,
           preferredChessProvider:
             preferredProvider ?? FieldValue.delete(),
-          badge: FieldValue.delete(),
           updatedAt: now
         },
         { merge: true }

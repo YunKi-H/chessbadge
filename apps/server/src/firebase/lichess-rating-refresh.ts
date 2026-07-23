@@ -172,7 +172,6 @@ export async function completeLichessRatingRefresh(
       transaction.set(chzzkRef, {
         badges,
         preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-        badge: FieldValue.delete(),
         updatedAt: Timestamp.fromDate(now)
       }, { merge: true });
     }

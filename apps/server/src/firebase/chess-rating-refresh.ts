@@ -193,7 +193,6 @@ export async function completeChessComRatingRefresh(
       {
         badges,
         preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-        badge: FieldValue.delete(),
         updatedAt: Timestamp.fromDate(now)
       },
       { merge: true }
