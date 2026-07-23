@@ -1,14 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
-import { App } from "./ui/App";
-import { BroadcastOverlayRoute } from "./ui/BroadcastOverlayRoute";
 import { NotFoundPage } from "./ui/NotFoundPage";
 import { RouteLoading } from "./ui/RouteLoading";
 
 export const router = createBrowserRouter([
-  {
-    path: "/overlay/:publicToken",
-    Component: BroadcastOverlayRoute
-  },
   {
     path: "/auth/chzzk/callback",
     HydrateFallback: RouteLoading,
@@ -18,8 +12,11 @@ export const router = createBrowserRouter([
     }
   },
   {
-    Component: App,
     HydrateFallback: RouteLoading,
+    lazy: async () => {
+      const module = await import("./ui/App");
+      return { Component: module.App };
+    },
     children: [
       {
         index: true,

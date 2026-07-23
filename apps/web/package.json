@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @elobadge/core build && vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && NODE_ENV=production vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint ."
