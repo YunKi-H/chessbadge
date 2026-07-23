@@ -4,7 +4,11 @@ import type {
   ChessSpeed,
   RatingBadge
 } from "@elobadge/core";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import {
+  FieldValue,
+  Timestamp,
+  type Transaction
+} from "firebase-admin/firestore";
 import { getHighestRating } from "../chess/rating-selection.js";
 import { getFirestoreDb } from "./admin.js";
 import {
@@ -33,52 +37,55 @@ async function reconcileLinkedChessBadges(
 ): Promise<ChzzkChessBadgeState> {
   const db = getFirestoreDb();
   const chzzkRef = db.collection("chzzkAccounts").doc(chzzkChannelId);
-  const [snapshot, userSnapshot] = await Promise.all([
-    chzzkRef.get(),
-    db.collection("users").doc(uid).get()
-  ]);
 
-  if (snapshot.data()?.uid !== uid) {
-    throw new ChessBadgePreferenceError("identity_mismatch");
-  }
+  return db.runTransaction(async (transaction) => {
+    const [snapshot, userSnapshot] = await Promise.all([
+      transaction.get(chzzkRef),
+      transaction.get(db.collection("users").doc(uid))
+    ]);
 
-  const state = parseChzzkChessBadgeState(snapshot.data());
-  const accountIds = userSnapshot.data()?.chessAccountIds;
-  const linkedBadges = await Promise.all(
-    (["chesscom", "lichess"] as const).map(async (provider) => {
-      const accountId = accountIds?.[provider];
-      return typeof accountId === "string"
-        ? deriveLinkedBadge(uid, accountId, provider)
-        : null;
-    })
-  );
-  const badges: ChessBadges = { ...state.badges };
-  for (const badge of linkedBadges) {
-    if (badge) {
-      badges[badge.provider] = badge;
+    if (snapshot.data()?.uid !== uid) {
+      throw new ChessBadgePreferenceError("identity_mismatch");
     }
-  }
 
-  const preferredProvider =
-    state.preferredProvider && badges[state.preferredProvider]
-      ? state.preferredProvider
-      : badges.chesscom
-        ? "chesscom"
-        : badges.lichess
-          ? "lichess"
+    const state = parseChzzkChessBadgeState(snapshot.data());
+    const accountIds = userSnapshot.data()?.chessAccountIds;
+    const linkedBadges = await Promise.all(
+      (["chesscom", "lichess"] as const).map(async (provider) => {
+        const accountId = accountIds?.[provider];
+        return typeof accountId === "string"
+          ? deriveLinkedBadge(transaction, uid, accountId, provider)
           : null;
-  const reconciled = { badges, preferredProvider };
+      })
+    );
+    const badges: ChessBadges = { ...state.badges };
+    for (const badge of linkedBadges) {
+      if (badge) {
+        badges[badge.provider] = badge;
+      }
+    }
 
-  if (!sameBadgeState(state, reconciled)) {
-    await chzzkRef.update({
-      badges,
-      preferredChessProvider: preferredProvider ?? FieldValue.delete(),
-      badge: preferredProvider ? badges[preferredProvider]! : null,
-      updatedAt: FieldValue.serverTimestamp()
-    });
-  }
+    const preferredProvider =
+      state.preferredProvider && badges[state.preferredProvider]
+        ? state.preferredProvider
+        : badges.chesscom
+          ? "chesscom"
+          : badges.lichess
+            ? "lichess"
+            : null;
+    const reconciled = { badges, preferredProvider };
 
-  return reconciled;
+    if (!sameBadgeState(state, reconciled)) {
+      transaction.update(chzzkRef, {
+        badges,
+        preferredChessProvider: preferredProvider ?? FieldValue.delete(),
+        badge: preferredProvider ? badges[preferredProvider]! : null,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+    }
+
+    return reconciled;
+  });
 }
 
 export async function updateChessBadgePreference(
@@ -119,14 +126,18 @@ export async function updateChessBadgePreference(
 }
 
 async function deriveLinkedBadge(
+  transaction: Transaction,
   uid: string,
   accountId: string,
   provider: ChessProvider
 ): Promise<RatingBadge | null> {
   const accountRef = getFirestoreDb().collection("chessAccounts").doc(accountId);
-  const [accountSnapshot, ratingsSnapshot] = await Promise.all([
-    accountRef.get(),
-    accountRef.collection("ratings").get()
+  const ratingRefs = getProviderSpeeds(provider).map((speed) =>
+    accountRef.collection("ratings").doc(speed)
+  );
+  const [accountSnapshot, ...ratingSnapshots] = await Promise.all([
+    transaction.get(accountRef),
+    ...ratingRefs.map((ratingRef) => transaction.get(ratingRef))
   ]);
   const account = accountSnapshot.data();
   if (
@@ -138,10 +149,11 @@ async function deriveLinkedBadge(
   }
 
   const highest = getHighestRating(
-    ratingsSnapshot.docs.flatMap((document) => {
+    ratingSnapshots.flatMap((document) => {
       const rating = document.data();
       const speed = document.id;
       if (
+        !rating ||
         !isProviderSpeed(provider, speed) ||
         typeof rating.value !== "number"
       ) {
@@ -158,6 +170,12 @@ async function deriveLinkedBadge(
   return highest
     ? { provider, ...highest }
     : null;
+}
+
+function getProviderSpeeds(provider: ChessProvider): readonly ChessSpeed[] {
+  return provider === "lichess"
+    ? ["bullet", "blitz", "rapid", "classical"]
+    : ["bullet", "blitz", "rapid"];
 }
 
 function isProviderSpeed(

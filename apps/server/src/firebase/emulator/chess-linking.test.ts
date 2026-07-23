@@ -341,6 +341,68 @@ test("badge preference restores a missing provider badge from linked accounts", 
   });
 });
 
+test("concurrent badge reconciliation does not restore a disconnected account", async () => {
+  const uid = "chzzk:concurrent-disconnect-viewer";
+  const channelId = "concurrent-disconnect-viewer";
+  const chessComAccountId = "chesscom:concurrent-disconnect";
+  const lichessAccountId = "lichess:concurrent-disconnect";
+  const db = getFirestoreDb();
+  const chessComBadge = {
+    provider: "chesscom",
+    speed: "rapid",
+    value: 1800,
+    provisional: false
+  } as const;
+  await Promise.all([
+    db.collection("users").doc(uid).set({
+      chessAccountIds: {
+        chesscom: chessComAccountId,
+        lichess: lichessAccountId
+      },
+      activeChessProvider: "lichess"
+    }),
+    db.collection("chzzkAccounts").doc(channelId).set({
+      uid,
+      badges: { chesscom: chessComBadge },
+      preferredChessProvider: "chesscom",
+      badge: chessComBadge
+    }),
+    db.collection("chessAccounts").doc(chessComAccountId).set({
+      uid,
+      provider: "chesscom",
+      verifiedAt: Timestamp.now()
+    }),
+    db.collection("chessAccounts").doc(lichessAccountId).set({
+      uid,
+      provider: "lichess",
+      verifiedAt: Timestamp.now()
+    }),
+    db.collection("chessAccounts").doc(chessComAccountId)
+      .collection("ratings").doc("rapid").set({ value: 1800 }),
+    db.collection("chessAccounts").doc(lichessAccountId)
+      .collection("ratings").doc("blitz").set({
+        value: 1900,
+        provisional: false
+      })
+  ]);
+
+  const results = await Promise.all([
+    getChessBadgePreference(uid, channelId),
+    disconnectLichessAccount(uid, channelId)
+  ]);
+
+  assert.equal(results.at(-1), true);
+  assert.deepEqual(await getChzzkChessBadgeState(channelId), {
+    badges: { chesscom: chessComBadge },
+    preferredProvider: "chesscom"
+  });
+  assert.equal(
+    (await db.collection("chzzkAccounts").doc(channelId).get())
+      .data()?.badges?.lichess,
+    undefined
+  );
+});
+
 test("verification cleanup deletes only expired challenges", async () => {
   const db = getFirestoreDb();
   const now = new Date("2026-07-20T00:00:00.000Z");
