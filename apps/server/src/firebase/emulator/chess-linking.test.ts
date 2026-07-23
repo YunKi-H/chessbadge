@@ -34,6 +34,7 @@ import {
   listDueChessComRatingRefreshes
 } from "../chess-rating-refresh.js";
 import { listDueLichessRatingRefreshes } from "../lichess-rating-refresh.js";
+import { backfillMissingRatingRefreshSchedules } from "../rating-refresh-schedule-migration.js";
 import { getChessBadgePreference } from "../chess-preferences.js";
 import {
   enableStreamerOverlayAccess,
@@ -482,6 +483,72 @@ test("rating refresh queries isolate providers and paginate legacy accounts", as
   assert.deepEqual(await listDueLichessRatingRefreshes(now, 1), [
     "lichess:due"
   ]);
+});
+
+test("rating refresh schedule migration backfills only linked verified accounts", async () => {
+  const db = getFirestoreDb();
+  const accounts = db.collection("chessAccounts");
+  const now = new Date("2026-07-23T00:00:00.000Z");
+  const existingSchedule = Timestamp.fromMillis(now.getTime() + 1_000);
+
+  await Promise.all([
+    accounts.doc("chesscom:missing-schedule").set({
+      provider: "chesscom",
+      uid: "chzzk:chesscom-schedule",
+      verifiedAt: Timestamp.fromMillis(now.getTime() - 1_000)
+    }),
+    accounts.doc("lichess:missing-schedule").set({
+      provider: "lichess",
+      uid: "chzzk:lichess-schedule",
+      verifiedAt: Timestamp.fromMillis(now.getTime() - 1_000)
+    }),
+    accounts.doc("chesscom:unverified").set({
+      provider: "chesscom",
+      uid: "chzzk:unverified"
+    }),
+    accounts.doc("lichess:disconnected").set({
+      provider: "lichess",
+      uid: null,
+      verifiedAt: Timestamp.fromMillis(now.getTime() - 1_000)
+    }),
+    accounts.doc("chesscom:scheduled").set({
+      provider: "chesscom",
+      uid: "chzzk:scheduled",
+      verifiedAt: Timestamp.fromMillis(now.getTime() - 1_000),
+      nextRatingRefreshAt: existingSchedule
+    })
+  ]);
+
+  assert.deepEqual(await backfillMissingRatingRefreshSchedules(false, now), {
+    chesscomFound: 1,
+    lichessFound: 1,
+    migrated: 0
+  });
+  assert.deepEqual(await backfillMissingRatingRefreshSchedules(true, now), {
+    chesscomFound: 1,
+    lichessFound: 1,
+    migrated: 2
+  });
+
+  const [chessCom, lichess, scheduled] = await Promise.all([
+    accounts.doc("chesscom:missing-schedule").get(),
+    accounts.doc("lichess:missing-schedule").get(),
+    accounts.doc("chesscom:scheduled").get()
+  ]);
+  for (const snapshot of [chessCom, lichess]) {
+    const refreshAt = snapshot.data()?.nextRatingRefreshAt;
+    assert.ok(refreshAt instanceof Timestamp);
+    assert.ok(refreshAt.toMillis() >= now.getTime());
+    assert.ok(refreshAt.toMillis() < now.getTime() + 12 * 60 * 60 * 1_000);
+  }
+  const scheduledRefreshAt = scheduled.data()?.nextRatingRefreshAt;
+  assert.ok(scheduledRefreshAt instanceof Timestamp);
+  assert.equal(scheduledRefreshAt.toMillis(), existingSchedule.toMillis());
+  assert.deepEqual(await backfillMissingRatingRefreshSchedules(true, now), {
+    chesscomFound: 0,
+    lichessFound: 0,
+    migrated: 0
+  });
 });
 
 test("verification cleanup deletes only expired challenges", async () => {

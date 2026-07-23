@@ -231,6 +231,21 @@ connected, `chzzkAccounts.badges` stores both ratings and
 `preferredChessProvider` is the only viewer preference. Refreshing an account
 updates that provider's badge without changing the viewer's selection.
 
+Verified accounts created before automatic refresh scheduling require a one-time
+backfill. The command is a dry run unless execution and the Firebase project ID
+are both supplied. In production, run the compiled script from the `deploy`
+directory:
+
+```bash
+docker compose exec app node apps/server/dist/scripts/migrate-rating-refresh-schedules.js
+docker compose exec app node apps/server/dist/scripts/migrate-rating-refresh-schedules.js \
+  --execute --confirm-project=<FIREBASE_PROJECT_ID>
+```
+
+Backfilled refresh times are distributed across the following twelve hours to
+avoid sending a burst of requests to Chess.com or Lichess. After a final dry run
+returns zero accounts, the temporary compatibility scan can be removed.
+
 ## First Milestone
 
 The first product risk to remove is Chzzk chat ingestion:
